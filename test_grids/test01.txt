@@ -1,0 +1,6 @@
+# Exemple de grille 1★
+ABBBB
+ABBBB
+CCBBB
+DDDDD
+DEEED
