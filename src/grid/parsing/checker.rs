@@ -15,7 +15,7 @@ impl Checker {
 
     /// Vérifie la validité d'une grille parsée
     pub fn check(&self) -> Result<(), String> {
-        for region in &self.parser.regions {
+        for region in &self.parser.regions() {
             if !self.region_ok(*region) {
                 return Err(format!(
                     "La region '{region}' n'est pas un bloc consistant dans cette grille",

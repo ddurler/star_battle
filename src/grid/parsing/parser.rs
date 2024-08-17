@@ -24,12 +24,12 @@ use std::collections::HashSet;
 use super::Checker;
 
 /// Caractères de commentaire au début d'une ligne du fichier pour une grille à résoudre
-const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
+pub const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
 
 /// Caractères non admissibles comme symboles d'une région
 const ILLEGAL_REGION_CHARS: [char; 4] = [' ', '\t', '\n', '\r'];
 
-/// Case de la grille
+/// Case de la grille parsée
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ParsedCell {
     /// Ligne de la case dans la grille
@@ -54,7 +54,7 @@ struct ParsedGrid(Vec<ParsedLine>);
 #[derive(Clone, Debug, Default)]
 pub struct Parser {
     /// Symboles identifiés comme 'région' dans la grille
-    pub regions: HashSet<char>,
+    regions: HashSet<char>,
 
     /// Grille parsée
     parsed_grid: ParsedGrid,
@@ -129,16 +129,25 @@ impl TryFrom<Vec<&str>> for Parser {
 
 impl Parser {
     /// Nombre de lignes dans la grille parsée
+    #[must_use]
     pub fn nb_lines(&self) -> usize {
         self.parsed_grid.0.len()
     }
 
     /// Nombre de colonnes dans la grille parsée
+    #[must_use]
     pub fn nb_columns(&self) -> usize {
         self.parsed_grid.0[0].0.len()
     }
 
+    /// Liste des régions de la grille parsée
+    #[must_use]
+    pub fn regions(&self) -> Vec<char> {
+        self.regions.iter().copied().collect()
+    }
+
     /// Retourne la case de la grille en (line, column) (si existe)
+    #[must_use]
     pub fn cell(&self, line: usize, column: usize) -> Option<ParsedCell> {
         if line < self.nb_lines() && column < self.nb_columns() {
             Some(self.parsed_grid.0[line].0[column].clone())
@@ -148,11 +157,13 @@ impl Parser {
     }
 
     /// région de la case (line, column)
-    pub fn region(&self, line: usize, column: usize) -> char {
+    #[must_use]
+    pub fn cell_region(&self, line: usize, column: usize) -> char {
         self.parsed_grid.0[line].0[column].region
     }
 
     /// Liste des cases d'une grille parsée
+    #[must_use]
     pub fn list_cells(&self) -> Vec<ParsedCell> {
         let mut cells = vec![];
         for line_parsed in &self.parsed_grid.0 {
@@ -164,6 +175,7 @@ impl Parser {
     }
 
     /// Liste des cases d'une région d'une grille parsée
+    #[must_use]
     pub fn region_cells(&self, region: char) -> Vec<ParsedCell> {
         self.list_cells()
             .iter()
@@ -229,42 +241,42 @@ mod tests {
         assert_eq!(grid.nb_columns(), 5);
 
         // Région A
-        assert_eq!(grid.region(0, 0), 'A');
-        assert_eq!(grid.region(1, 0), 'A');
+        assert_eq!(grid.cell_region(0, 0), 'A');
+        assert_eq!(grid.cell_region(1, 0), 'A');
 
         // Région B
-        assert_eq!(grid.region(0, 1), 'B');
-        assert_eq!(grid.region(0, 2), 'B');
-        assert_eq!(grid.region(0, 3), 'B');
-        assert_eq!(grid.region(0, 4), 'B');
+        assert_eq!(grid.cell_region(0, 1), 'B');
+        assert_eq!(grid.cell_region(0, 2), 'B');
+        assert_eq!(grid.cell_region(0, 3), 'B');
+        assert_eq!(grid.cell_region(0, 4), 'B');
 
-        assert_eq!(grid.region(1, 1), 'B');
-        assert_eq!(grid.region(1, 2), 'B');
-        assert_eq!(grid.region(1, 3), 'B');
-        assert_eq!(grid.region(1, 4), 'B');
+        assert_eq!(grid.cell_region(1, 1), 'B');
+        assert_eq!(grid.cell_region(1, 2), 'B');
+        assert_eq!(grid.cell_region(1, 3), 'B');
+        assert_eq!(grid.cell_region(1, 4), 'B');
 
-        assert_eq!(grid.region(2, 2), 'B');
-        assert_eq!(grid.region(2, 3), 'B');
-        assert_eq!(grid.region(2, 4), 'B');
+        assert_eq!(grid.cell_region(2, 2), 'B');
+        assert_eq!(grid.cell_region(2, 3), 'B');
+        assert_eq!(grid.cell_region(2, 4), 'B');
 
         // Région C
-        assert_eq!(grid.region(2, 0), 'C');
-        assert_eq!(grid.region(2, 1), 'C');
+        assert_eq!(grid.cell_region(2, 0), 'C');
+        assert_eq!(grid.cell_region(2, 1), 'C');
 
         // Région D
-        assert_eq!(grid.region(3, 0), 'D');
-        assert_eq!(grid.region(3, 1), 'D');
-        assert_eq!(grid.region(3, 2), 'D');
-        assert_eq!(grid.region(3, 3), 'D');
-        assert_eq!(grid.region(3, 4), 'D');
+        assert_eq!(grid.cell_region(3, 0), 'D');
+        assert_eq!(grid.cell_region(3, 1), 'D');
+        assert_eq!(grid.cell_region(3, 2), 'D');
+        assert_eq!(grid.cell_region(3, 3), 'D');
+        assert_eq!(grid.cell_region(3, 4), 'D');
 
-        assert_eq!(grid.region(4, 0), 'D');
-        assert_eq!(grid.region(4, 4), 'D');
+        assert_eq!(grid.cell_region(4, 0), 'D');
+        assert_eq!(grid.cell_region(4, 4), 'D');
 
         // Région E
-        assert_eq!(grid.region(4, 1), 'E');
-        assert_eq!(grid.region(4, 2), 'E');
-        assert_eq!(grid.region(4, 3), 'E');
+        assert_eq!(grid.cell_region(4, 1), 'E');
+        assert_eq!(grid.cell_region(4, 2), 'E');
+        assert_eq!(grid.cell_region(4, 3), 'E');
     }
 
     // Toutes les grilles suivantes sont invalides

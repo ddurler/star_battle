@@ -8,7 +8,7 @@ Vous devez placer des étoiles sur la grille selon ces règles :
 * 2 étoiles ne peuvent pas être adjacentes horizontalement, verticalement ou en diagonale.
 * Pour les puzzles 1★, vous devez placer 1 étoile sur chaque ligne, colonne et bloc.
 * Pour les puzzles 2★, les étoiles par ligne, colonne et bloc doivent être 2, etc.
-* Il existe également des puzzles 3★,.
+* Il existe également des puzzles 3★.
 
 ## Sites internet
 
