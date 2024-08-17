@@ -60,13 +60,13 @@ pub struct Parser {
     parsed_grid: ParsedGrid,
 }
 
-impl Parser {
-    /// Constructeur d'une grille à résoudre selon une liste de `Strings` où chaque `String` est la définition
-    /// textuelle du contenu d'une ligne de la grille à résoudre
-    pub fn try_from_text_lines(lines: &[String]) -> Result<Self, String> {
-        let mut grid_parsed = Parser::default();
+impl TryFrom<&Vec<String>> for Parser {
+    type Error = String;
+
+    fn try_from(value: &Vec<String>) -> Result<Self, Self::Error> {
+        let mut grid_parsed = Self::default();
         // Parsing des lignes de la définition de la grille
-        for (num_line, text_line) in lines.iter().enumerate() {
+        for (num_line, text_line) in value.iter().enumerate() {
             let text_line = text_line.trim();
             if !text_line.is_empty() && !text_line.starts_with(COMMENT_CHARS) {
                 if let Err(e) = grid_parsed.parse_text_line(text_line) {
@@ -91,7 +91,43 @@ impl Parser {
 
         Ok(grid_parsed)
     }
+}
 
+impl TryFrom<Vec<String>> for Parser {
+    type Error = String;
+
+    fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
+    }
+}
+
+impl TryFrom<&[String]> for Parser {
+    type Error = String;
+
+    fn try_from(value: &[String]) -> Result<Self, Self::Error> {
+        Self::try_from(value.to_vec())
+    }
+}
+
+impl TryFrom<&str> for Parser {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let lines: Vec<String> = value.split('\n').map(|s: &str| s.to_string()).collect();
+        Self::try_from(&lines)
+    }
+}
+
+impl TryFrom<Vec<&str>> for Parser {
+    type Error = String;
+
+    fn try_from(value: Vec<&str>) -> Result<Self, Self::Error> {
+        let lines: Vec<String> = value.iter().map(|&s: &&str| s.to_string()).collect();
+        Self::try_from(lines)
+    }
+}
+
+impl Parser {
     /// Nombre de lignes dans la grille parsée
     pub fn nb_lines(&self) -> usize {
         self.parsed_grid.0.len()
@@ -169,20 +205,12 @@ impl Parser {
     }
 }
 
-impl TryFrom<&str> for Parser {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let lines: Vec<String> = value.split('\n').map(|s: &str| s.to_string()).collect();
-        Parser::try_from_text_lines(&lines)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::cognitive_complexity)]
     fn test_try_from_ok() {
         let result_grid = Parser::try_from(
             "

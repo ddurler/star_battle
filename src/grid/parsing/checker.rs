@@ -9,7 +9,7 @@ pub struct Checker {
 
 impl Checker {
     /// Constructeur d'un 'checker' d'une grille parsée
-    pub fn new(parser: Parser) -> Self {
+    pub const fn new(parser: Parser) -> Self {
         Self { parser }
     }
 
