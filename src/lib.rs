@@ -68,6 +68,6 @@ assert_eq!(parser.cell(0, 0).unwrap().region, 'A');
 
 */
 
-mod grid;
+mod grid_parser;
 
-pub use grid::{ParsedCell, Parser};
+pub use grid_parser::{ParsedCell, Parser};
