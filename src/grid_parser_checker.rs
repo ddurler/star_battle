@@ -1,16 +1,17 @@
 //! Vérifie la validité d'une grille parsée
 
 use super::LineColumn;
-use super::{Cell, Parser};
+use super::Region;
+use super::{GridCell, GridParser};
 
-pub struct Checker {
+pub struct GridParserChecker {
     /// Grille parsée
-    parser: Parser,
+    parser: GridParser,
 }
 
-impl Checker {
+impl GridParserChecker {
     /// Constructeur d'un 'checker' d'une grille parsée
-    pub const fn new(parser: Parser) -> Self {
+    pub const fn new(parser: GridParser) -> Self {
         Self { parser }
     }
 
@@ -28,7 +29,7 @@ impl Checker {
     }
 
     /// Vérifie la validité d'une région de la grille
-    fn region_ok(&self, region: char) -> bool {
+    fn region_ok(&self, region: Region) -> bool {
         // Liste des cases de la région
         let all_region_cells = self.parser.region_cells(region);
         if all_region_cells.is_empty() {
@@ -68,7 +69,7 @@ impl Checker {
     }
 
     // Liste des case adjacentes à une case
-    fn adjacent_cells(&self, cell: &Cell) -> Vec<Cell> {
+    fn adjacent_cells(&self, cell: &GridCell) -> Vec<GridCell> {
         let mut cells = vec![];
         let (line, column) = (cell.line_column.line, cell.line_column.column);
 
@@ -112,7 +113,7 @@ impl Checker {
     }
 
     /// Liste des cases adjacentes à la case (line, column) de la même région
-    fn adjacent_region_cells(&self, cell: &Cell) -> Vec<Cell> {
+    fn adjacent_region_cells(&self, cell: &GridCell) -> Vec<GridCell> {
         self.adjacent_cells(cell)
             .iter()
             .filter(|c| c.region == cell.region)

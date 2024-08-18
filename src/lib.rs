@@ -17,9 +17,13 @@ Vous devez placer des étoiles sur la grille selon ces règles :
 * [Vidéo en français](https://www.youtube.com/watch?v=dG-xkOYYkwY)
 * [Site en anglais](https://starbattle.puzzlebaron.com/)
 
-## [`Parser`]
+## [`Region`]
 
-[`Parser`] permet la construction d'une grille depuis une formalisation textuelle de l'énoncé.
+[`Region`] est la zone dans laquelle se trouve une étoile. C'est un `char`.
+
+## [`GridParser`]
+
+[`GridParser`] construit une grille depuis une formalisation textuelle d'une grille à résoudre'.
 
 Le constructeur est une forme de `TryFrom` pour l'un des types suivants :
 
@@ -36,8 +40,8 @@ Les lignes 'vides' ou qui débutent par l'un des caractères suivants sont ignor
 (considérés comme d'éventuels commentaires).<br>
 
 ```rust
-use star_battle::Parser;
-assert!(Parser::try_from("
+use star_battle::GridParser;
+assert!(GridParser::try_from("
     ABBBB
     ABBBB
     CCBBB
@@ -48,7 +52,7 @@ assert!(Parser::try_from("
 
 ## [`LineColumn`]
 
-[`LineColumn`] permet de repérer une case dans la grille par ses coordonnées (`line`, `column`) base 0.
+[`LineColumn`] repère une case dans la grille par ses coordonnées (`line`, `column`) base 0.
 
 ```rust
 use star_battle::LineColumn;
@@ -57,30 +61,30 @@ assert_eq!(lc.line(), 0);
 assert_eq!(lc.column(), 0);
 ```
 
-## [`Value`]
+## [`CellValue`]
 
-[`Value`] permet de définir une valeur possible d'une case de la grille parmi:
+[`CellValue`] définit une valeur possible d'une case de la grille parmi:
 
 * `Unknown` : Contenu inconnu de la case (valeur par défaut)
 * `Star` : La case contient une étoile
 * `NoStar` : La case ne contient pas d'étoile
 
 ```rust
-use star_battle::Value;
-assert_eq!(Value::default(), Value::Unknown);
+use star_battle::CellValue;
+assert_eq!(CellValue::default(), CellValue::Unknown);
 ```
 
-## [`Cell`]
+## [`CellValue`]
 
-[`Cell`] permet de décrire une case de la grille parsée par [`Parser`]:
+[`CellValue`] décrit une case de la grille parsée par [`GridParser`]:
 
-* `line_column`: ligne et colonne de la case dans la grille (base 0)
-* `region`: région de la case (caractère)
-* `value`: valeur contenue dans la case
+* `line_column`: [`LineColumn`] de la case dans la grille (base 0)
+* `region`: [`Region`] de la case
+* `value`: [`CellValue`] de la case. Par défaut, `CellValue::Unknown`.
 
 ```rust
-use star_battle::{Parser, LineColumn, Value};
-let parser = Parser::try_from("
+use star_battle::{GridParser, LineColumn, CellValue};
+let parser = GridParser::try_from("
     ABBBB
     ABBBB
     CCBBB
@@ -88,23 +92,57 @@ let parser = Parser::try_from("
     DEEED
 ").unwrap();
 assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
-assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().value, Value::Unknown);
+assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().value, CellValue::Unknown);
+```
+
+## [`GridHandler`]
+
+[`GridHandler`] définit les caractéristiques d'une grille à résoudre:
+
+* `nb_lines`: nombre de lignes de la grille
+* `nb_columns`: nombre de colonnes de la grille
+* `nb_stars`: nombre d'étoiles à placer dans chaque ligne, colonne et région de la grille
+* `regions`: liste des régions de la grille (par ordre alphabétique)
+* `cell_region`: région d'une case de la grille
+
+Les contenus des cases de la grille ne sont pas définis dans la structure [`GridHandler`].
+
+```rust
+use star_battle::{GridParser, GridHandler, LineColumn};
+let parser = GridParser::try_from("
+    ABBBB
+    ABBBB
+    CCBBB
+    DDDDD
+    DEEED
+").unwrap();
+let grid = GridHandler::new(&parser, 1);
+assert_eq!(grid.nb_lines(), 5);
+assert_eq!(grid.nb_columns(), 5);
+assert_eq!(grid.nb_stars(), 1);
+assert_eq!(grid.regions(), vec!['A', 'B', 'C', 'D', 'E']);
+assert_eq!(grid.cell_region(&LineColumn::new(0, 0)), 'A');
 ```
 
 */
 
+/// Une région est identifiée par un caractère.
+pub type Region = char;
+
 // Modules
-mod cell;
-mod checker;
+mod cell_value;
+mod grid_cell;
+mod grid_handler;
+mod grid_parser;
+mod grid_parser_checker;
 mod line_column;
-mod parser;
-mod value;
 
 // Internal
-use checker::Checker;
+use grid_parser_checker::GridParserChecker;
 
 // Exported
-pub use cell::Cell;
+pub use cell_value::CellValue;
+pub use grid_cell::GridCell;
+pub use grid_handler::GridHandler;
+pub use grid_parser::GridParser;
 pub use line_column::LineColumn;
-pub use parser::Parser;
-pub use value::Value;

@@ -21,10 +21,11 @@
 
 use std::collections::HashSet;
 
-use crate::Cell;
-use crate::Checker;
+use crate::CellValue;
+use crate::GridCell;
+use crate::GridParserChecker;
 use crate::LineColumn;
-use crate::Value;
+use crate::Region;
 
 /// Caractères de commentaire au début d'une ligne du fichier pour une grille à résoudre
 pub const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
@@ -34,7 +35,7 @@ const ILLEGAL_REGION_CHARS: [char; 4] = [' ', '\t', '\n', '\r'];
 
 /// Ligne de la grille
 #[derive(Clone, Debug, Default)]
-struct ParsedLine(Vec<Cell>);
+struct ParsedLine(Vec<GridCell>);
 
 /// Grille
 #[derive(Clone, Debug, Default)]
@@ -42,15 +43,15 @@ struct ParsedGrid(Vec<ParsedLine>);
 
 /// Grid parser
 #[derive(Clone, Debug, Default)]
-pub struct Parser {
+pub struct GridParser {
     /// Symboles identifiés comme 'région' dans la grille
-    regions: HashSet<char>,
+    regions: HashSet<Region>,
 
     /// Grille parsée
     parsed_grid: ParsedGrid,
 }
 
-impl TryFrom<&Vec<String>> for Parser {
+impl TryFrom<&Vec<String>> for GridParser {
     type Error = String;
 
     fn try_from(value: &Vec<String>) -> Result<Self, Self::Error> {
@@ -76,14 +77,14 @@ impl TryFrom<&Vec<String>> for Parser {
         }
 
         // Contrôle de la grille parsée
-        let checker = Checker::new(grid_parsed.clone());
+        let checker = GridParserChecker::new(grid_parsed.clone());
         checker.check()?;
 
         Ok(grid_parsed)
     }
 }
 
-impl TryFrom<Vec<String>> for Parser {
+impl TryFrom<Vec<String>> for GridParser {
     type Error = String;
 
     fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
@@ -91,7 +92,7 @@ impl TryFrom<Vec<String>> for Parser {
     }
 }
 
-impl TryFrom<&[String]> for Parser {
+impl TryFrom<&[String]> for GridParser {
     type Error = String;
 
     fn try_from(value: &[String]) -> Result<Self, Self::Error> {
@@ -99,7 +100,7 @@ impl TryFrom<&[String]> for Parser {
     }
 }
 
-impl TryFrom<&str> for Parser {
+impl TryFrom<&str> for GridParser {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -108,7 +109,7 @@ impl TryFrom<&str> for Parser {
     }
 }
 
-impl TryFrom<Vec<&str>> for Parser {
+impl TryFrom<Vec<&str>> for GridParser {
     type Error = String;
 
     fn try_from(value: Vec<&str>) -> Result<Self, Self::Error> {
@@ -117,7 +118,7 @@ impl TryFrom<Vec<&str>> for Parser {
     }
 }
 
-impl Parser {
+impl GridParser {
     /// Nombre de lignes dans la grille parsée
     #[must_use]
     pub fn nb_lines(&self) -> usize {
@@ -132,13 +133,13 @@ impl Parser {
 
     /// Liste des régions de la grille parsée
     #[must_use]
-    pub fn regions(&self) -> Vec<char> {
+    pub fn regions(&self) -> Vec<Region> {
         self.regions.iter().copied().collect()
     }
 
     /// Retourne la case de la grille en (line, column) (si existe)
     #[must_use]
-    pub fn cell(&self, line_column: &LineColumn) -> Option<Cell> {
+    pub fn cell(&self, line_column: &LineColumn) -> Option<GridCell> {
         if line_column.line < self.nb_lines() && line_column.column < self.nb_columns() {
             Some(self.parsed_grid.0[line_column.line].0[line_column.column].clone())
         } else {
@@ -148,13 +149,13 @@ impl Parser {
 
     /// région de la case (line, column)
     #[must_use]
-    pub fn cell_region(&self, line_column: &LineColumn) -> char {
+    pub fn cell_region(&self, line_column: &LineColumn) -> Region {
         self.parsed_grid.0[line_column.line].0[line_column.column].region
     }
 
     /// Liste des cases d'une grille parsée
     #[must_use]
-    pub fn list_cells(&self) -> Vec<Cell> {
+    pub fn list_cells(&self) -> Vec<GridCell> {
         let mut cells = vec![];
         for line_parsed in &self.parsed_grid.0 {
             for cell in &line_parsed.0 {
@@ -166,7 +167,7 @@ impl Parser {
 
     /// Liste des cases d'une région d'une grille parsée
     #[must_use]
-    pub fn region_cells(&self, region: char) -> Vec<Cell> {
+    pub fn region_cells(&self, region: Region) -> Vec<GridCell> {
         self.list_cells()
             .iter()
             .filter(|c| c.region == region)
@@ -184,14 +185,14 @@ impl Parser {
         for (column, region) in text_line.chars().enumerate() {
             if ILLEGAL_REGION_CHARS.contains(&region) {
                 return Err(format!(
-                    "Le symbole '{region}' n'est pas valide pour identifier une région"
+                    "Le caractère '{region}' n'est pas valide pour identifier une région"
                 ));
             }
             self.regions.insert(region);
-            let cur_cell = Cell {
+            let cur_cell = GridCell {
                 line_column: LineColumn::from((line, column)),
                 region,
-                value: Value::Unknown,
+                value: CellValue::Unknown,
             };
             line_parsed.0.push(cur_cell);
         }
@@ -214,7 +215,7 @@ mod tests {
     #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_try_from_ok() {
-        let result_grid = Parser::try_from(
+        let result_grid = GridParser::try_from(
             "
             # Exemple de grille 1★
             ABBBB
@@ -296,7 +297,7 @@ mod tests {
     #[test]
     fn test_try_from_nok() {
         for s in INVALID_GRIDS {
-            let grid = Parser::try_from(s);
+            let grid = GridParser::try_from(s);
             assert!(grid.is_err());
         }
     }

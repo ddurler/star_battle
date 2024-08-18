@@ -4,7 +4,7 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
-use star_battle::Parser;
+use star_battle::GridParser;
 
 /// Message d'aide pour l'utilisateur
 const HELP_MESSAGE: &str = "
@@ -40,7 +40,7 @@ fn main() {
 
     // Traitement du contenu du fichier
     match read_lines(file_name) {
-        Ok(lines) => match Parser::try_from(&lines) {
+        Ok(lines) => match GridParser::try_from(&lines) {
             Ok(grid_parsed) => {
                 dbg!(grid_parsed);
             }
@@ -84,7 +84,7 @@ mod tests {
 
         for test_file in test_files {
             let lines = read_lines(test_file).unwrap();
-            let _grid_parsed = Parser::try_from(&lines).unwrap();
+            let _grid_parsed = GridParser::try_from(&lines).unwrap();
         }
     }
 }
