@@ -21,7 +21,8 @@
 
 use std::collections::HashSet;
 
-use super::Checker;
+use crate::Checker;
+use crate::LineColumn;
 
 /// Caractères de commentaire au début d'une ligne du fichier pour une grille à résoudre
 pub const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
@@ -32,11 +33,8 @@ const ILLEGAL_REGION_CHARS: [char; 4] = [' ', '\t', '\n', '\r'];
 /// Case de la grille parsée
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ParsedCell {
-    /// Ligne de la case dans la grille
-    pub line: usize,
-
-    /// Colonne de la case dans la grille
-    pub column: usize,
+    /// Coordonnées de la case dans la grille
+    pub line_column: LineColumn,
 
     /// Région de la case
     pub region: char,
@@ -148,9 +146,9 @@ impl Parser {
 
     /// Retourne la case de la grille en (line, column) (si existe)
     #[must_use]
-    pub fn cell(&self, line: usize, column: usize) -> Option<ParsedCell> {
-        if line < self.nb_lines() && column < self.nb_columns() {
-            Some(self.parsed_grid.0[line].0[column].clone())
+    pub fn cell(&self, line_column: &LineColumn) -> Option<ParsedCell> {
+        if line_column.line < self.nb_lines() && line_column.column < self.nb_columns() {
+            Some(self.parsed_grid.0[line_column.line].0[line_column.column].clone())
         } else {
             None
         }
@@ -158,8 +156,8 @@ impl Parser {
 
     /// région de la case (line, column)
     #[must_use]
-    pub fn cell_region(&self, line: usize, column: usize) -> char {
-        self.parsed_grid.0[line].0[column].region
+    pub fn cell_region(&self, line_column: &LineColumn) -> char {
+        self.parsed_grid.0[line_column.line].0[line_column.column].region
     }
 
     /// Liste des cases d'une grille parsée
@@ -199,8 +197,7 @@ impl Parser {
             }
             self.regions.insert(region);
             let cur_cell = ParsedCell {
-                line,
-                column,
+                line_column: LineColumn::from((line, column)),
                 region,
             };
             line_parsed.0.push(cur_cell);
@@ -241,42 +238,42 @@ mod tests {
         assert_eq!(grid.nb_columns(), 5);
 
         // Région A
-        assert_eq!(grid.cell_region(0, 0), 'A');
-        assert_eq!(grid.cell_region(1, 0), 'A');
+        assert_eq!(grid.cell_region(&LineColumn::new(0, 0)), 'A');
+        assert_eq!(grid.cell_region(&LineColumn::new(1, 0)), 'A');
 
         // Région B
-        assert_eq!(grid.cell_region(0, 1), 'B');
-        assert_eq!(grid.cell_region(0, 2), 'B');
-        assert_eq!(grid.cell_region(0, 3), 'B');
-        assert_eq!(grid.cell_region(0, 4), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(0, 1)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(0, 2)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(0, 3)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(0, 4)), 'B');
 
-        assert_eq!(grid.cell_region(1, 1), 'B');
-        assert_eq!(grid.cell_region(1, 2), 'B');
-        assert_eq!(grid.cell_region(1, 3), 'B');
-        assert_eq!(grid.cell_region(1, 4), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(1, 1)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(1, 2)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(1, 3)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(1, 4)), 'B');
 
-        assert_eq!(grid.cell_region(2, 2), 'B');
-        assert_eq!(grid.cell_region(2, 3), 'B');
-        assert_eq!(grid.cell_region(2, 4), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(2, 2)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(2, 3)), 'B');
+        assert_eq!(grid.cell_region(&LineColumn::new(2, 4)), 'B');
 
         // Région C
-        assert_eq!(grid.cell_region(2, 0), 'C');
-        assert_eq!(grid.cell_region(2, 1), 'C');
+        assert_eq!(grid.cell_region(&LineColumn::new(2, 0)), 'C');
+        assert_eq!(grid.cell_region(&LineColumn::new(2, 1)), 'C');
 
         // Région D
-        assert_eq!(grid.cell_region(3, 0), 'D');
-        assert_eq!(grid.cell_region(3, 1), 'D');
-        assert_eq!(grid.cell_region(3, 2), 'D');
-        assert_eq!(grid.cell_region(3, 3), 'D');
-        assert_eq!(grid.cell_region(3, 4), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(3, 0)), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(3, 1)), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(3, 2)), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(3, 3)), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(3, 4)), 'D');
 
-        assert_eq!(grid.cell_region(4, 0), 'D');
-        assert_eq!(grid.cell_region(4, 4), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(4, 0)), 'D');
+        assert_eq!(grid.cell_region(&LineColumn::new(4, 4)), 'D');
 
         // Région E
-        assert_eq!(grid.cell_region(4, 1), 'E');
-        assert_eq!(grid.cell_region(4, 2), 'E');
-        assert_eq!(grid.cell_region(4, 3), 'E');
+        assert_eq!(grid.cell_region(&LineColumn::new(4, 1)), 'E');
+        assert_eq!(grid.cell_region(&LineColumn::new(4, 2)), 'E');
+        assert_eq!(grid.cell_region(&LineColumn::new(4, 3)), 'E');
     }
 
     // Toutes les grilles suivantes sont invalides

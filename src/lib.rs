@@ -55,7 +55,7 @@ assert!(Parser::try_from("
 * `region`: région de la case (caractère)
 
 ```rust
-use star_battle::Parser;
+use star_battle::{Parser, LineColumn};
 let parser = Parser::try_from("
     ABBBB
     ABBBB
@@ -63,11 +63,25 @@ let parser = Parser::try_from("
     DDDDD
     DEEED
 ").unwrap();
-assert_eq!(parser.cell(0, 0).unwrap().region, 'A');
+assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
 ```
 
+## [`LineColumn`]
+
+`[LineColumn]` permet de repérer une case dans la grille par ses coordonnées (`line`, `column`) base 0.
+
+```rust
+use star_battle::LineColumn;
+let lc = LineColumn::new(0, 0);
+assert_eq!(lc.line(), 0);
+assert_eq!(lc.column(), 0);
+```
 */
 
-mod grid_parser;
+mod checker;
+mod line_column;
+mod parser;
 
-pub use grid_parser::{ParsedCell, Parser};
+use checker::Checker;
+pub use line_column::LineColumn;
+pub use parser::{ParsedCell, Parser};

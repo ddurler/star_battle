@@ -1,5 +1,6 @@
 //! Vérifie la validité d'une grille parsée
 
+use super::LineColumn;
 use super::{ParsedCell, Parser};
 
 pub struct Checker {
@@ -69,25 +70,42 @@ impl Checker {
     // Liste des case adjacentes à une case
     fn adjacent_cells(&self, cell: &ParsedCell) -> Vec<ParsedCell> {
         let mut cells = vec![];
+        let (line, column) = (cell.line_column.line, cell.line_column.column);
 
         // North ?
-        if cell.line > 0 {
-            cells.push(self.parser.cell(cell.line - 1, cell.column).unwrap());
+        if line > 0 {
+            cells.push(
+                self.parser
+                    .cell(&LineColumn::new(line - 1, column))
+                    .unwrap(),
+            );
         }
 
         // South ?
-        if cell.line < self.parser.nb_lines() - 1 {
-            cells.push(self.parser.cell(cell.line + 1, cell.column).unwrap());
+        if line < self.parser.nb_lines() - 1 {
+            cells.push(
+                self.parser
+                    .cell(&LineColumn::new(line + 1, column))
+                    .unwrap(),
+            );
         }
 
         // West ?
-        if cell.column > 0 {
-            cells.push(self.parser.cell(cell.line, cell.column - 1).unwrap());
+        if column > 0 {
+            cells.push(
+                self.parser
+                    .cell(&LineColumn::new(line, column - 1))
+                    .unwrap(),
+            );
         }
 
         // East ?
-        if cell.column < self.parser.nb_columns() - 1 {
-            cells.push(self.parser.cell(cell.line, cell.column + 1).unwrap());
+        if column < self.parser.nb_columns() - 1 {
+            cells.push(
+                self.parser
+                    .cell(&LineColumn::new(line, column + 1))
+                    .unwrap(),
+            );
         }
 
         cells
