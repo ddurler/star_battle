@@ -21,8 +21,10 @@
 
 use std::collections::HashSet;
 
+use crate::Cell;
 use crate::Checker;
 use crate::LineColumn;
+use crate::Value;
 
 /// Caractères de commentaire au début d'une ligne du fichier pour une grille à résoudre
 pub const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
@@ -30,19 +32,9 @@ pub const COMMENT_CHARS: [char; 3] = ['#', ';', '@'];
 /// Caractères non admissibles comme symboles d'une région
 const ILLEGAL_REGION_CHARS: [char; 4] = [' ', '\t', '\n', '\r'];
 
-/// Case de la grille parsée
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct ParsedCell {
-    /// Coordonnées de la case dans la grille
-    pub line_column: LineColumn,
-
-    /// Région de la case
-    pub region: char,
-}
-
 /// Ligne de la grille
 #[derive(Clone, Debug, Default)]
-struct ParsedLine(Vec<ParsedCell>);
+struct ParsedLine(Vec<Cell>);
 
 /// Grille
 #[derive(Clone, Debug, Default)]
@@ -146,7 +138,7 @@ impl Parser {
 
     /// Retourne la case de la grille en (line, column) (si existe)
     #[must_use]
-    pub fn cell(&self, line_column: &LineColumn) -> Option<ParsedCell> {
+    pub fn cell(&self, line_column: &LineColumn) -> Option<Cell> {
         if line_column.line < self.nb_lines() && line_column.column < self.nb_columns() {
             Some(self.parsed_grid.0[line_column.line].0[line_column.column].clone())
         } else {
@@ -162,7 +154,7 @@ impl Parser {
 
     /// Liste des cases d'une grille parsée
     #[must_use]
-    pub fn list_cells(&self) -> Vec<ParsedCell> {
+    pub fn list_cells(&self) -> Vec<Cell> {
         let mut cells = vec![];
         for line_parsed in &self.parsed_grid.0 {
             for cell in &line_parsed.0 {
@@ -174,7 +166,7 @@ impl Parser {
 
     /// Liste des cases d'une région d'une grille parsée
     #[must_use]
-    pub fn region_cells(&self, region: char) -> Vec<ParsedCell> {
+    pub fn region_cells(&self, region: char) -> Vec<Cell> {
         self.list_cells()
             .iter()
             .filter(|c| c.region == region)
@@ -196,9 +188,10 @@ impl Parser {
                 ));
             }
             self.regions.insert(region);
-            let cur_cell = ParsedCell {
+            let cur_cell = Cell {
                 line_column: LineColumn::from((line, column)),
                 region,
+                value: Value::Unknown,
             };
             line_parsed.0.push(cur_cell);
         }

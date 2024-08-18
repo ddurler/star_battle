@@ -1,7 +1,7 @@
 //! Vérifie la validité d'une grille parsée
 
 use super::LineColumn;
-use super::{ParsedCell, Parser};
+use super::{Cell, Parser};
 
 pub struct Checker {
     /// Grille parsée
@@ -68,7 +68,7 @@ impl Checker {
     }
 
     // Liste des case adjacentes à une case
-    fn adjacent_cells(&self, cell: &ParsedCell) -> Vec<ParsedCell> {
+    fn adjacent_cells(&self, cell: &Cell) -> Vec<Cell> {
         let mut cells = vec![];
         let (line, column) = (cell.line_column.line, cell.line_column.column);
 
@@ -112,7 +112,7 @@ impl Checker {
     }
 
     /// Liste des cases adjacentes à la case (line, column) de la même région
-    fn adjacent_region_cells(&self, cell: &ParsedCell) -> Vec<ParsedCell> {
+    fn adjacent_region_cells(&self, cell: &Cell) -> Vec<Cell> {
         self.adjacent_cells(cell)
             .iter()
             .filter(|c| c.region == cell.region)

@@ -29,11 +29,11 @@ Le constructeur est une forme de `TryFrom` pour l'un des types suivants :
 * `TryFrom<Vec<&str>> for `
 * `TryFrom<&str> for Parser`
 
-Chaque ligne du texte (ou chaque élément du vecteur) correspond à une ligne de la grille.
-Les différentes zones sont identifiées par des caractères distincts dans les cases correspondantes.
-Les espaces ou séparateurs équivalents (e.g. TAB) sont ignorés.
+Chaque ligne du texte (ou chaque élément du vecteur) correspond à une ligne de la grille.<br>
+Les différentes zones sont identifiées par des caractères distincts dans les cases correspondantes.<br>
+Les espaces ou séparateurs équivalents (e.g. TAB) sont ignorés.<br>
 Les lignes 'vides' ou qui débutent par l'un des caractères suivants sont ignorées : '*', '#', '/'
-(considérés comme d'éventuels commentaires).
+(considérés comme d'éventuels commentaires).<br>
 
 ```rust
 use star_battle::Parser;
@@ -46,16 +46,40 @@ assert!(Parser::try_from("
 ").is_ok());
 ```
 
-## `[ParsedCell]`
+## [`LineColumn`]
 
-`[ParsedCell]` permet de décrire une case de la grille parsée par [`Parser`]:
-
-* `line`: ligne de la case dans la grille (base 0)
-* `column`: colonne de la case dans la grille (base 0)
-* `region`: région de la case (caractère)
+[`LineColumn`] permet de repérer une case dans la grille par ses coordonnées (`line`, `column`) base 0.
 
 ```rust
-use star_battle::{Parser, LineColumn};
+use star_battle::LineColumn;
+let lc = LineColumn::new(0, 0);
+assert_eq!(lc.line(), 0);
+assert_eq!(lc.column(), 0);
+```
+
+## [`Value`]
+
+[`Value`] permet de définir une valeur possible d'une case de la grille parmi:
+
+* `Unknown` : Contenu inconnu de la case (valeur par défaut)
+* `Star` : La case contient une étoile
+* `NoStar` : La case ne contient pas d'étoile
+
+```rust
+use star_battle::Value;
+assert_eq!(Value::default(), Value::Unknown);
+```
+
+## [`Cell`]
+
+[`Cell`] permet de décrire une case de la grille parsée par [`Parser`]:
+
+* `line_column`: ligne et colonne de la case dans la grille (base 0)
+* `region`: région de la case (caractère)
+* `value`: valeur contenue dans la case
+
+```rust
+use star_battle::{Parser, LineColumn, Value};
 let parser = Parser::try_from("
     ABBBB
     ABBBB
@@ -64,24 +88,23 @@ let parser = Parser::try_from("
     DEEED
 ").unwrap();
 assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
+assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().value, Value::Unknown);
 ```
 
-## [`LineColumn`]
-
-`[LineColumn]` permet de repérer une case dans la grille par ses coordonnées (`line`, `column`) base 0.
-
-```rust
-use star_battle::LineColumn;
-let lc = LineColumn::new(0, 0);
-assert_eq!(lc.line(), 0);
-assert_eq!(lc.column(), 0);
-```
 */
 
+// Modules
+mod cell;
 mod checker;
 mod line_column;
 mod parser;
+mod value;
 
+// Internal
 use checker::Checker;
+
+// Exported
+pub use cell::Cell;
 pub use line_column::LineColumn;
-pub use parser::{ParsedCell, Parser};
+pub use parser::Parser;
+pub use value::Value;
