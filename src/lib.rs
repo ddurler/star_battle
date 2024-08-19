@@ -94,10 +94,10 @@ assert_eq!(CellValue::default(), CellValue::Unknown);
 ```rust
 use star_battle::{GridParser, LineColumn, CellValue};
 
-let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
 
-assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
-assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().value, CellValue::Unknown);
+assert_eq!(grid_parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
+assert_eq!(grid_parser.cell(&LineColumn::new(0, 0)).unwrap().value, CellValue::Unknown);
 ```
 
 ## [`GridHandler`]
@@ -107,7 +107,7 @@ assert_eq!(parser.cell(&LineColumn::new(0, 0)).unwrap().value, CellValue::Unknow
 * `nb_lines`: nombre de lignes de la grille
 * `nb_columns`: nombre de colonnes de la grille
 * `nb_stars`: nombre d'étoiles à placer dans chaque ligne, colonne et région de la grille
-* `regions`: liste des régions de la grille (par ordre alphabétique)
+* `regions`: liste des régions de la grille (par ordre de taille croissante)
 * `cell_region`: région d'une case de la grille
 
 Les contenus des cases de la grille ne sont pas définis dans la structure [`GridHandler`].<br>
@@ -118,13 +118,13 @@ Initialement, le [`GridHandler`] est construite à partir d'un [`GridParser`].
 ```rust
 use star_battle::{GridParser, GridHandler, LineColumn};
 
-let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
-let grid = GridHandler::new(&parser, 1);
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid = GridHandler::new(&grid_parser, 1);
 
 assert_eq!(grid.nb_lines(), 5);
 assert_eq!(grid.nb_columns(), 5);
 assert_eq!(grid.nb_stars(), 1);
-assert_eq!(grid.regions(), vec!['A', 'B', 'C', 'D', 'E']);
+assert_eq!(grid.regions().len(), 5);
 assert_eq!(grid.cell_region(&LineColumn::new(0, 0)), 'A');
 ```
 
@@ -141,8 +141,8 @@ Initialement, la [`Grid`] est construite à partir d'un [`GridHandler`].
 ```rust
 use star_battle::{GridParser, GridHandler, Grid};
 
-let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
-let grid_handler = GridHandler::new(&parser, 1);
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
 let grid = Grid::from(&grid_handler);
 
 assert_eq!(grid.nb_lines(), 5);
@@ -155,8 +155,8 @@ postulant sur la valeur des cases de la grille pour évaluer les possibilités.
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, LineColumn, CellValue};
 
-let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
-let grid_handler = GridHandler::new(&parser, 1);
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
 let grid = Grid::from(&grid_handler);
 
 let mut grid_cloned = grid.clone();
@@ -164,6 +164,31 @@ let line_column = LineColumn::new(0, 0);
 grid_cloned.cell_mut(&line_column).value = CellValue::Star;
 assert_eq!(grid.cell(&line_column).value, CellValue::Unknown);
 assert_eq!(grid_cloned.cell(&line_column).value, CellValue::Star);
+```
+
+## [`GridSurfer`]
+
+[`GridSurfer`] est une  énumération qui permet de naviguer sur les case de la grille qui répondre à certains
+critères à travers la grille.
+
+ Cette énumération est applicable sur un objet [`GridHandler`] associé à une grille définie par un [`Grid`].
+
+ On peut ainsi parcourir les cases de la grille suivant les critères suivants:
+
+* Toutes les cases de la grille
+* Toutes les cases d'une region
+* Toutes les cases adjacentes à une case donnée (y compris les diagonales)
+
+```rust
+use star_battle::{GridParser, GridHandler, Grid, LineColumn, GridSurfer};
+
+let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let handler = GridHandler::new(&parser, 1);
+let grid = Grid::from(&handler);
+
+// Liste des cases d'une région
+let surfer = handler.surfer(&grid, GridSurfer::Region('A'));
+assert_eq!(surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
 ```
 
 */
@@ -178,6 +203,7 @@ mod grid_cell;
 mod grid_handler;
 mod grid_parser;
 mod grid_parser_checker;
+mod grid_surfer;
 mod line_column;
 
 // Internal
@@ -189,4 +215,5 @@ pub use grid::Grid;
 pub use grid_cell::GridCell;
 pub use grid_handler::GridHandler;
 pub use grid_parser::GridParser;
+pub use grid_surfer::GridSurfer;
 pub use line_column::LineColumn;
