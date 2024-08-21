@@ -26,7 +26,7 @@ impl From<&GridHandler> for Grid {
                 let line_column = LineColumn::new(line, column);
                 let grid_cell = GridCell {
                     line_column,
-                    region: value.cell_region(&line_column),
+                    region: value.cell_region(line_column),
                     value: CellValue::Unknown,
                 };
                 cells_line.push(grid_cell);
@@ -55,13 +55,13 @@ impl Grid {
 
     /// Retourne la case (non mutable) de la grille en (line, column)
     #[must_use]
-    pub fn cell(&self, line_column: &LineColumn) -> &GridCell {
+    pub fn cell(&self, line_column: LineColumn) -> &GridCell {
         &self.cells[line_column.line][line_column.column]
     }
 
     /// Retourne la case (mutable) de la grille en (line, column)
     #[must_use]
-    pub fn cell_mut(&mut self, line_column: &LineColumn) -> &mut GridCell {
+    pub fn cell_mut(&mut self, line_column: LineColumn) -> &mut GridCell {
         &mut self.cells[line_column.line][line_column.column]
     }
 }
@@ -84,7 +84,7 @@ mod tests {
         for line in 0..grid.nb_lines() {
             for column in 0..grid.nb_columns() {
                 let line_column = LineColumn::new(line, column);
-                assert_eq!(grid.cell(&line_column).value, CellValue::Unknown);
+                assert_eq!(grid.cell(line_column).value, CellValue::Unknown);
             }
         }
     }
@@ -98,8 +98,8 @@ mod tests {
 
         let mut grid_cloned = grid.clone();
         let line_column = LineColumn::new(0, 0);
-        grid_cloned.cell_mut(&line_column).value = CellValue::Star;
-        assert_eq!(grid.cell(&line_column).value, CellValue::Unknown);
-        assert_eq!(grid_cloned.cell(&line_column).value, CellValue::Star);
+        grid_cloned.cell_mut(line_column).value = CellValue::Star;
+        assert_eq!(grid.cell(line_column).value, CellValue::Unknown);
+        assert_eq!(grid_cloned.cell(line_column).value, CellValue::Star);
     }
 }

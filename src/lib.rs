@@ -7,8 +7,8 @@ Les règles de Star Battle sont simples :
 Vous devez placer des étoiles sur la grille selon ces règles :
 
 * 2 étoiles ne peuvent pas être adjacentes horizontalement, verticalement ou en diagonale.
-* Pour les puzzles 1★, vous devez placer 1 étoile sur chaque ligne, colonne et bloc.
-* Pour les puzzles 2★, les étoiles par ligne, colonne et bloc doivent être 2, etc.
+* Pour les puzzles 1★, vous devez placer 1 étoile sur chaque ligne, colonne et région.
+* Pour les puzzles 2★, les étoiles par ligne, colonne et région doivent être 2, etc.
 * Il existe également des puzzles 3★.
 
 ## Sites internet
@@ -19,13 +19,14 @@ Vous devez placer des étoiles sur la grille selon ces règles :
 
 ## [`Region`]
 
-[`Region`] est la zone dans laquelle se trouve une étoile. C'est un `char`.
+[`Region`] est une zone de cases dans laquelle il faut également placer une étoile (ou le nombre d'étoiles à placer).
+Pour ce crate, c'est identifié par un [`char`] issu de la formalisation textuelle reconnue par le [`GridParser`].
 
 ## [`GridParser`]
 
-[`GridParser`] construit une grille depuis une formalisation textuelle d'une grille à résoudre'.
+[`GridParser`] construit une grille depuis une formalisation textuelle d'une grille à résoudre.
 
-Le constructeur est une forme de `TryFrom` pour l'un des types suivants :
+Le constructeur est une forme de [`TryFrom`] pour l'un des types suivants :
 
 * `TryFrom<&Vec<String>> for Parser`
 * `TryFrom<Vec<String>> for Parser`
@@ -34,14 +35,16 @@ Le constructeur est une forme de `TryFrom` pour l'un des types suivants :
 * `TryFrom<&str> for Parser`
 
 Chaque ligne du texte (ou chaque élément du vecteur) correspond à une ligne de la grille.<br>
-Les différentes zones sont identifiées par des caractères distincts dans les cases correspondantes.<br>
+Les différentes régions de la grille sont identifiées par des caractères distincts dans les cases correspondantes.<br>
 Les espaces ou séparateurs équivalents (e.g. TAB) sont ignorés.<br>
-Les lignes 'vides' ou qui débutent par l'un des caractères suivants sont ignorées : '*', '#', '/'
+Les lignes 'vides' ou qui débutent par l'un des caractères suivants sont ignorées : '*', '#' ou '/'
 (considérés comme d'éventuels commentaires).<br>
 
 ```rust
 use star_battle::GridParser;
 
+// Représentation textuelle d'une grille de 5 lignes et 5 colonnes contenant 5 régions
+// distinctes repérées par les lettres 'A', 'B', 'C', 'D' et 'E'.
 assert!(GridParser::try_from("
     ABBBB
     ABBBB
@@ -54,12 +57,16 @@ assert!(GridParser::try_from("
 Le [`GridParser`] est utilisé pour définir la grille initiale. La cohérence de la grille est vérifiée:
 
 * Syntaxe correcte dans le texte descriptif de la grille
-* Nombre cohérent de colonne dans chaque ligne
+* Nombre cohérent de colonnes dans chaque ligne
 * Régions connexes dans la grille
 
 ## [`LineColumn`]
 
 [`LineColumn`] repère une case dans la grille par ses coordonnées (`line`, `column`) base 0.
+
+Lorsque les coordonnées d'une case sont affichées (`Display`), les colonnes sont référencées par les lettres
+'A', 'B', ... et les lignes par des chiffres'1', '2'.<br>
+La case (0, 0) en haut et à gauche de la grille correspond donc avec 'A1'.
 
 ```rust
 use star_battle::LineColumn;
@@ -96,8 +103,8 @@ use star_battle::{GridParser, LineColumn, CellValue};
 
 let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
 
-assert_eq!(grid_parser.cell(&LineColumn::new(0, 0)).unwrap().region, 'A');
-assert_eq!(grid_parser.cell(&LineColumn::new(0, 0)).unwrap().value, CellValue::Unknown);
+assert_eq!(grid_parser.cell(LineColumn::new(0, 0)).unwrap().region, 'A');
+assert_eq!(grid_parser.cell(LineColumn::new(0, 0)).unwrap().value, CellValue::Unknown);
 ```
 
 ## [`GridHandler`]
@@ -125,7 +132,7 @@ assert_eq!(grid.nb_lines(), 5);
 assert_eq!(grid.nb_columns(), 5);
 assert_eq!(grid.nb_stars(), 1);
 assert_eq!(grid.regions().len(), 5);
-assert_eq!(grid.cell_region(&LineColumn::new(0, 0)), 'A');
+assert_eq!(grid.cell_region(LineColumn::new(0, 0)), 'A');
 ```
 
 ## [`Grid`]
@@ -161,9 +168,9 @@ let grid = Grid::from(&grid_handler);
 
 let mut grid_cloned = grid.clone();
 let line_column = LineColumn::new(0, 0);
-grid_cloned.cell_mut(&line_column).value = CellValue::Star;
-assert_eq!(grid.cell(&line_column).value, CellValue::Unknown);
-assert_eq!(grid_cloned.cell(&line_column).value, CellValue::Star);
+grid_cloned.cell_mut(line_column).value = CellValue::Star;
+assert_eq!(grid.cell(line_column).value, CellValue::Unknown);
+assert_eq!(grid_cloned.cell(line_column).value, CellValue::Star);
 ```
 
 ## [`GridSurfer`]
@@ -178,18 +185,49 @@ critères à travers la grille.
 * Toutes les cases de la grille
 * Toutes les cases d'une region
 * Toutes les cases adjacentes à une case donnée (y compris les diagonales)
+* Toutes les cases d'une ligne
+* Toutes les cases d'une colonne
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, LineColumn, GridSurfer};
 
-let parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
-let handler = GridHandler::new(&parser, 1);
-let grid = Grid::from(&handler);
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
+let grid = Grid::from(&grid_handler);
 
 // Liste des cases d'une région
-let surfer = handler.surfer(&grid, GridSurfer::Region('A'));
-assert_eq!(surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
+let grid_surfer = grid_handler.surfer(&grid, GridSurfer::Region('A'));
+assert_eq!(grid_surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
 ```
+
+## [`BadRulerError`]
+
+[`BadRulerError`] identifie une situation qui invalide le contenu d'une grille.
+
+La fonction [`check_bad_rules`] permet de vérifier qu'une une grille est valide ou non.
+
+Les situations invalidant étant :
+
+* 2 cases adjacentes contenant chacune une étoile
+* Une 'zone' qui contient trop d'étoiles
+* Une 'zone' dans laquelle il n'est pas possible de placer suffisamment d'étoiles
+
+Ici une 'zone' étant :
+
+* Une [`Region`]
+* Une ligne de la grille
+* Une colonne de la grille
+
+```rust
+use star_battle::{GridParser, GridHandler, Grid, check_bad_rules};
+
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
+let grid = Grid::from(&grid_handler);
+
+assert!(check_bad_rules(&grid_handler, &grid).is_ok());
+```
+
 
 */
 
@@ -199,6 +237,7 @@ pub type Region = char;
 // Modules
 mod cell_value;
 mod grid;
+mod grid_bad_ruler;
 mod grid_cell;
 mod grid_handler;
 mod grid_parser;
@@ -212,6 +251,7 @@ use grid_parser_checker::GridParserChecker;
 // Exported
 pub use cell_value::CellValue;
 pub use grid::Grid;
+pub use grid_bad_ruler::{check_bad_rules, BadRulerError};
 pub use grid_cell::GridCell;
 pub use grid_handler::GridHandler;
 pub use grid_parser::GridParser;

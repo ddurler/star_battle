@@ -1,5 +1,6 @@
 //! Structure d'une grille en cours de résolution.
 
+use crate::Grid;
 use crate::GridParser;
 use crate::LineColumn;
 use crate::Region;
@@ -63,7 +64,7 @@ impl GridHandler {
         for line in 0..nb_lines {
             let mut vec_line_regions = Vec::with_capacity(nb_columns);
             for column in 0..nb_columns {
-                vec_line_regions.push(parser.cell(&LineColumn::new(line, column)).unwrap().region);
+                vec_line_regions.push(parser.cell(LineColumn::new(line, column)).unwrap().region);
             }
             cells_region.push(vec_line_regions);
         }
@@ -102,13 +103,13 @@ impl GridHandler {
 
     /// Région d'une case de la grille
     #[must_use]
-    pub fn cell_region(&self, line_column: &LineColumn) -> Region {
+    pub fn cell_region(&self, line_column: LineColumn) -> Region {
         self.cells_region[line_column.line][line_column.column]
     }
 
     /// Liste des cases adjacentes d'une case de la grille (y compris en diagonale)
     #[must_use]
-    pub fn adjacent_cells(&self, line_column: &LineColumn) -> Vec<LineColumn> {
+    pub fn adjacent_cells(&self, line_column: LineColumn) -> Vec<LineColumn> {
         let (line, column) = (line_column.line, line_column.column);
         let mut adjacent_cells = vec![];
         // North
@@ -145,6 +146,17 @@ impl GridHandler {
         }
         adjacent_cells
     }
+
+    /// Retourne `true`si une des cases adjacentes de la case `line_column` est une étoile
+    #[must_use]
+    pub fn is_star_adjacent(&self, grid: &Grid, line_column: LineColumn) -> bool {
+        for line_column in self.adjacent_cells(line_column) {
+            if grid.cell(line_column).is_star() {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[cfg(test)]
@@ -168,49 +180,49 @@ mod tests {
         }
 
         // Région A
-        assert_eq!(handler.cell_region(&LineColumn::new(0, 0)), 'A');
-        assert_eq!(handler.cell_region(&LineColumn::new(1, 0)), 'A');
+        assert_eq!(handler.cell_region(LineColumn::new(0, 0)), 'A');
+        assert_eq!(handler.cell_region(LineColumn::new(1, 0)), 'A');
 
         // Région B
-        assert_eq!(handler.cell_region(&LineColumn::new(0, 1)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(0, 2)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(0, 3)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(0, 4)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(0, 1)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(0, 2)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(0, 3)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(0, 4)), 'B');
 
-        assert_eq!(handler.cell_region(&LineColumn::new(1, 1)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(1, 2)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(1, 3)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(1, 4)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(1, 1)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(1, 2)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(1, 3)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(1, 4)), 'B');
 
-        assert_eq!(handler.cell_region(&LineColumn::new(2, 2)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(2, 3)), 'B');
-        assert_eq!(handler.cell_region(&LineColumn::new(2, 4)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(2, 2)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(2, 3)), 'B');
+        assert_eq!(handler.cell_region(LineColumn::new(2, 4)), 'B');
 
         // Région C
-        assert_eq!(handler.cell_region(&LineColumn::new(2, 0)), 'C');
-        assert_eq!(handler.cell_region(&LineColumn::new(2, 1)), 'C');
+        assert_eq!(handler.cell_region(LineColumn::new(2, 0)), 'C');
+        assert_eq!(handler.cell_region(LineColumn::new(2, 1)), 'C');
 
         // Région D
-        assert_eq!(handler.cell_region(&LineColumn::new(3, 0)), 'D');
-        assert_eq!(handler.cell_region(&LineColumn::new(3, 1)), 'D');
-        assert_eq!(handler.cell_region(&LineColumn::new(3, 2)), 'D');
-        assert_eq!(handler.cell_region(&LineColumn::new(3, 3)), 'D');
-        assert_eq!(handler.cell_region(&LineColumn::new(3, 4)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(3, 0)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(3, 1)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(3, 2)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(3, 3)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(3, 4)), 'D');
 
-        assert_eq!(handler.cell_region(&LineColumn::new(4, 0)), 'D');
-        assert_eq!(handler.cell_region(&LineColumn::new(4, 4)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(4, 0)), 'D');
+        assert_eq!(handler.cell_region(LineColumn::new(4, 4)), 'D');
 
         // Région E
-        assert_eq!(handler.cell_region(&LineColumn::new(4, 1)), 'E');
-        assert_eq!(handler.cell_region(&LineColumn::new(4, 2)), 'E');
-        assert_eq!(handler.cell_region(&LineColumn::new(4, 3)), 'E');
+        assert_eq!(handler.cell_region(LineColumn::new(4, 1)), 'E');
+        assert_eq!(handler.cell_region(LineColumn::new(4, 2)), 'E');
+        assert_eq!(handler.cell_region(LineColumn::new(4, 3)), 'E');
     }
 
     #[test]
     #[rustfmt::skip]
     fn test_adjacent() {
         fn assert_adjacents(handler: &GridHandler, (line, column):(usize, usize), expected: Vec<(usize, usize)>, ) {
-            let adjacent_cells:HashSet<LineColumn> = handler.adjacent_cells(&LineColumn::new(line, column)).into_iter().collect();
+            let adjacent_cells:HashSet<LineColumn> = handler.adjacent_cells(LineColumn::new(line, column)).into_iter().collect();
             let expected_cells:HashSet<LineColumn> = expected.into_iter().map(|(line, column)| LineColumn::new(line, column)).collect();
             assert_eq!(adjacent_cells, expected_cells);
         }
@@ -231,5 +243,19 @@ mod tests {
         assert_adjacents(&handler, (2, 0), vec![(1, 0), (1, 1), (2, 1),]);
         assert_adjacents(&handler, (2, 1), vec![(1, 0), (1, 1), (1, 2), (2, 0), (2, 2)]);
         assert_adjacents(&handler, (2, 2), vec![(1, 1), (1, 2), (2, 1)]);
+    }
+
+    #[test]
+    fn test_is_star_adjacent() {
+        let parser = GridParser::try_from(vec!["AAA", "BBB", "CCC"]).unwrap();
+        let handler = GridHandler::new(&parser, 1);
+        let mut grid = Grid::from(&handler);
+
+        let line_column = LineColumn::new(0, 0);
+        assert!(!handler.is_star_adjacent(&grid, line_column));
+
+        let adjacent_line_column = LineColumn::new(1, 1);
+        grid.cell_mut(adjacent_line_column).value = crate::CellValue::Star;
+        assert!(handler.is_star_adjacent(&grid, line_column));
     }
 }

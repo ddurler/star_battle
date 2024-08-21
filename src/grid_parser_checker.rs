@@ -75,38 +75,22 @@ impl GridParserChecker {
 
         // North ?
         if line > 0 {
-            cells.push(
-                self.parser
-                    .cell(&LineColumn::new(line - 1, column))
-                    .unwrap(),
-            );
+            cells.push(self.parser.cell(LineColumn::new(line - 1, column)).unwrap());
         }
 
         // South ?
         if line < self.parser.nb_lines() - 1 {
-            cells.push(
-                self.parser
-                    .cell(&LineColumn::new(line + 1, column))
-                    .unwrap(),
-            );
+            cells.push(self.parser.cell(LineColumn::new(line + 1, column)).unwrap());
         }
 
         // West ?
         if column > 0 {
-            cells.push(
-                self.parser
-                    .cell(&LineColumn::new(line, column - 1))
-                    .unwrap(),
-            );
+            cells.push(self.parser.cell(LineColumn::new(line, column - 1)).unwrap());
         }
 
         // East ?
         if column < self.parser.nb_columns() - 1 {
-            cells.push(
-                self.parser
-                    .cell(&LineColumn::new(line, column + 1))
-                    .unwrap(),
-            );
+            cells.push(self.parser.cell(LineColumn::new(line, column + 1)).unwrap());
         }
 
         cells

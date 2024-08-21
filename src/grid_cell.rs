@@ -16,3 +16,23 @@ pub struct GridCell {
     /// Valeur de la case
     pub value: CellValue,
 }
+
+impl GridCell {
+    /// Retourne `true` si la case n'est pas définie
+    #[must_use]
+    pub fn is_unknown(&self) -> bool {
+        self.value == CellValue::Unknown
+    }
+
+    /// Retourne `true` si la case ne peut pas être une étoile
+    #[must_use]
+    pub fn is_no_star(&self) -> bool {
+        self.value == CellValue::NoStar
+    }
+
+    /// Retourne `true` si la case est une étoile
+    #[must_use]
+    pub fn is_star(&self) -> bool {
+        self.value == CellValue::Star
+    }
+}

@@ -1,5 +1,7 @@
 //! Help for grid line and column coordinates.
 
+use std::fmt::Display;
+
 /// Coordonnées d'une case de la grille (`line`, `column`) base 0
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct LineColumn {
@@ -13,6 +15,31 @@ pub struct LineColumn {
 impl From<(usize, usize)> for LineColumn {
     fn from((line, column): (usize, usize)) -> Self {
         Self { line, column }
+    }
+}
+
+/// Affichage du numéro de ligne : 0, 1, ... devient '1', '2', ...
+pub fn display_line(line: usize) -> String {
+    format!("{}", line + 1)
+}
+
+/// Affichage du numéro de colonne 0, 1, ... devient 'A', 'B', ...
+pub fn display_column(column: usize) -> String {
+    std::char::from_u32(u32::from(b'A') + u32::try_from(column).unwrap())
+        .unwrap()
+        .to_string()
+}
+
+impl Display for LineColumn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // On choisit d'utiliser les lettres 'A', 'B', 'C', 'D', 'E' pour les lignes
+        // La case de la ligne 0, colonne 0 est donc 'A1'.
+        write!(
+            f,
+            "{}{}",
+            display_column(self.column),
+            display_line(self.line)
+        )
     }
 }
 

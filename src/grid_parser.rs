@@ -139,7 +139,7 @@ impl GridParser {
 
     /// Retourne la case de la grille en (line, column) (si existe)
     #[must_use]
-    pub fn cell(&self, line_column: &LineColumn) -> Option<GridCell> {
+    pub fn cell(&self, line_column: LineColumn) -> Option<GridCell> {
         if line_column.line < self.nb_lines() && line_column.column < self.nb_columns() {
             Some(self.parsed_grid.0[line_column.line].0[line_column.column].clone())
         } else {
@@ -149,7 +149,7 @@ impl GridParser {
 
     /// région de la case (line, column)
     #[must_use]
-    pub fn cell_region(&self, line_column: &LineColumn) -> Region {
+    pub fn cell_region(&self, line_column: LineColumn) -> Region {
         self.parsed_grid.0[line_column.line].0[line_column.column].region
     }
 
@@ -232,42 +232,42 @@ mod tests {
         assert_eq!(grid.nb_columns(), 5);
 
         // Région A
-        assert_eq!(grid.cell_region(&LineColumn::new(0, 0)), 'A');
-        assert_eq!(grid.cell_region(&LineColumn::new(1, 0)), 'A');
+        assert_eq!(grid.cell_region(LineColumn::new(0, 0)), 'A');
+        assert_eq!(grid.cell_region(LineColumn::new(1, 0)), 'A');
 
         // Région B
-        assert_eq!(grid.cell_region(&LineColumn::new(0, 1)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(0, 2)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(0, 3)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(0, 4)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(0, 1)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(0, 2)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(0, 3)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(0, 4)), 'B');
 
-        assert_eq!(grid.cell_region(&LineColumn::new(1, 1)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(1, 2)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(1, 3)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(1, 4)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(1, 1)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(1, 2)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(1, 3)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(1, 4)), 'B');
 
-        assert_eq!(grid.cell_region(&LineColumn::new(2, 2)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(2, 3)), 'B');
-        assert_eq!(grid.cell_region(&LineColumn::new(2, 4)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(2, 2)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(2, 3)), 'B');
+        assert_eq!(grid.cell_region(LineColumn::new(2, 4)), 'B');
 
         // Région C
-        assert_eq!(grid.cell_region(&LineColumn::new(2, 0)), 'C');
-        assert_eq!(grid.cell_region(&LineColumn::new(2, 1)), 'C');
+        assert_eq!(grid.cell_region(LineColumn::new(2, 0)), 'C');
+        assert_eq!(grid.cell_region(LineColumn::new(2, 1)), 'C');
 
         // Région D
-        assert_eq!(grid.cell_region(&LineColumn::new(3, 0)), 'D');
-        assert_eq!(grid.cell_region(&LineColumn::new(3, 1)), 'D');
-        assert_eq!(grid.cell_region(&LineColumn::new(3, 2)), 'D');
-        assert_eq!(grid.cell_region(&LineColumn::new(3, 3)), 'D');
-        assert_eq!(grid.cell_region(&LineColumn::new(3, 4)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(3, 0)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(3, 1)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(3, 2)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(3, 3)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(3, 4)), 'D');
 
-        assert_eq!(grid.cell_region(&LineColumn::new(4, 0)), 'D');
-        assert_eq!(grid.cell_region(&LineColumn::new(4, 4)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(4, 0)), 'D');
+        assert_eq!(grid.cell_region(LineColumn::new(4, 4)), 'D');
 
         // Région E
-        assert_eq!(grid.cell_region(&LineColumn::new(4, 1)), 'E');
-        assert_eq!(grid.cell_region(&LineColumn::new(4, 2)), 'E');
-        assert_eq!(grid.cell_region(&LineColumn::new(4, 3)), 'E');
+        assert_eq!(grid.cell_region(LineColumn::new(4, 1)), 'E');
+        assert_eq!(grid.cell_region(LineColumn::new(4, 2)), 'E');
+        assert_eq!(grid.cell_region(LineColumn::new(4, 3)), 'E');
     }
 
     // Toutes les grilles suivantes sont invalides
