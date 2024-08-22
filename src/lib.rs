@@ -200,9 +200,9 @@ let grid_surfer = grid_handler.surfer(&grid, GridSurfer::Region('A'));
 assert_eq!(grid_surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
 ```
 
-## [`BadRulerError`]
+## [`BadRuleError`]
 
-[`BadRulerError`] identifie une situation qui invalide le contenu d'une grille.
+[`BadRuleError`] identifie une situation qui invalide le contenu d'une grille.
 
 La fonction [`check_bad_rules`] permet de vérifier qu'une une grille est valide ou non.
 
@@ -228,6 +228,46 @@ let grid = Grid::from(&grid_handler);
 assert!(check_bad_rules(&grid_handler, &grid).is_ok());
 ```
 
+# [`GridAction`]
+
+[`GridAction`] représente une action possible sur une case de la grille :
+
+* Placer une étoile
+* Indiquer qu'une étoile n'est possible dans cette case
+* Indiquer que le contenu d'une case est inconnu
+
+Ces actions sont liées au contenu possible d'une case de la grille défini par un [`CellValue`].
+
+[`GridAction`] implémente la méthode [`GridAction::apply_action`] qui permet d'appliquer une action sur une [`Grid`].
+
+Symétriquement, le module [`Grid`] implémente la méthode [`Grid::apply_action`] qui permet d'appliquer une
+de ces actions à une case de la grille.
+
+```rust
+use star_battle::{GridParser, GridHandler, Grid, CellValue, GridAction, LineColumn};
+
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
+let mut grid = Grid::from(&grid_handler);
+
+grid.apply_action(&GridAction::SetStar(LineColumn::new(1, 1)));
+assert_eq!(grid.cell(LineColumn::new(1, 1)).value, CellValue::Star);
+
+GridAction::SetNoStar(LineColumn::new(1, 1)).apply_action(&mut grid);
+assert_eq!(grid.cell(LineColumn::new(1, 1)).value, CellValue::NoStar);
+```
+
+# [`GoodRule`]
+
+[`GoodRule`] identifie les règles qui permettent d'avancer dans la construction/résolution d"une grille :
+
+* `NoStarAdjacentToStar(LineColumn, Vec<GridAction>)`:  Indique les cases adjacentes à une étoile qui ne peuvent
+   pas contenir une étoile et indique les actions à effectuer pour les définir.
+
+La fonction [`get_good_rule`] recherche un règle [`GoodRule`] applicable à une grille.<br>
+Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valide.<br>
+Sinon un `Option<GoodRule>` est retourné. None signifie alors qu'aucune règle permettant d'avancer dans la
+construction de la grille n'a été trouvé.
 
 */
 
@@ -237,8 +277,10 @@ pub type Region = char;
 // Modules
 mod cell_value;
 mod grid;
+mod grid_action;
 mod grid_bad_ruler;
 mod grid_cell;
+mod grid_good_ruler;
 mod grid_handler;
 mod grid_parser;
 mod grid_parser_checker;
@@ -251,8 +293,10 @@ use grid_parser_checker::GridParserChecker;
 // Exported
 pub use cell_value::CellValue;
 pub use grid::Grid;
-pub use grid_bad_ruler::{check_bad_rules, BadRulerError};
+pub use grid_action::GridAction;
+pub use grid_bad_ruler::{check_bad_rules, BadRuleError};
 pub use grid_cell::GridCell;
+pub use grid_good_ruler::{get_good_rule, GoodRule};
 pub use grid_handler::GridHandler;
 pub use grid_parser::GridParser;
 pub use grid_surfer::GridSurfer;

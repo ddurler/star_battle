@@ -11,7 +11,7 @@ use crate::LineColumn;
 
 /// Erreur de cohérence de la grille
 #[derive(thiserror::Error, Debug, PartialEq, Eq)]
-pub enum BadRulerError {
+pub enum BadRuleError {
     /// Etoile adjacente à une autre étoile
     #[error("Etoile {0} adjacente à l'étoile {1}")]
     StarAdjacent(LineColumn, LineColumn),
@@ -28,8 +28,8 @@ pub enum BadRulerError {
 /// Vérification de la validité d'une grille
 ///
 /// ### Errors
-/// Retourne un [`BadRulerError`] si la grille n'est pas valide
-pub fn check_bad_rules(handler: &GridHandler, grid: &Grid) -> Result<(), BadRulerError> {
+/// Retourne un [`BadRuleError`] si la grille n'est pas valide
+pub fn check_bad_rules(handler: &GridHandler, grid: &Grid) -> Result<(), BadRuleError> {
     check_no_star_adjacent(handler, grid)?;
     for region in handler.regions() {
         check_zone(handler, grid, GridSurfer::Region(region))?;
@@ -44,14 +44,14 @@ pub fn check_bad_rules(handler: &GridHandler, grid: &Grid) -> Result<(), BadRule
 }
 
 /// Parcours les cases de la grille pour vérifier qu'aucune étoile n'est adjacent à une autre étoile
-fn check_no_star_adjacent(handler: &GridHandler, grid: &Grid) -> Result<(), BadRulerError> {
+fn check_no_star_adjacent(handler: &GridHandler, grid: &Grid) -> Result<(), BadRuleError> {
     for line_column in handler.surfer(grid, GridSurfer::AllCells) {
         let cell = grid.cell(line_column);
         if cell.value == CellValue::Star {
             for adjacent_line_column in handler.adjacent_cells(line_column) {
                 let adjacent_cell = grid.cell(adjacent_line_column);
                 if adjacent_cell.value == CellValue::Star {
-                    return Err(BadRulerError::StarAdjacent(
+                    return Err(BadRuleError::StarAdjacent(
                         line_column,
                         adjacent_line_column,
                     ));
@@ -63,7 +63,7 @@ fn check_no_star_adjacent(handler: &GridHandler, grid: &Grid) -> Result<(), BadR
 }
 
 /// Vérifie la validité du nombre d'étoile sur une zone (line, colonne ou région).<br>
-fn check_zone(handler: &GridHandler, grid: &Grid, surfer: GridSurfer) -> Result<(), BadRulerError> {
+fn check_zone(handler: &GridHandler, grid: &Grid, surfer: GridSurfer) -> Result<(), BadRuleError> {
     let mut nb_stars = 0;
     let mut nb_possible_stars = 0;
 
@@ -76,9 +76,9 @@ fn check_zone(handler: &GridHandler, grid: &Grid, surfer: GridSurfer) -> Result<
     }
 
     if nb_stars > handler.nb_stars() {
-        return Err(BadRulerError::TooManyStarsInZone(surfer));
+        return Err(BadRuleError::TooManyStarsInZone(surfer));
     } else if nb_stars + nb_possible_stars < handler.nb_stars() {
-        return Err(BadRulerError::NotEnoughStarsInZone(surfer));
+        return Err(BadRuleError::NotEnoughStarsInZone(surfer));
     }
 
     Ok(())
@@ -108,7 +108,7 @@ mod tests {
         grid.cell_mut(LineColumn::new(1, 1)).value = CellValue::Star;
 
         match check_bad_rules(&grid_handler, &grid) {
-            Err(BadRulerError::StarAdjacent(_, _)) => (),
+            Err(BadRuleError::StarAdjacent(_, _)) => (),
             _ => panic!("Échec détection de 2 étoiles adjacentes dans la grille"),
         }
     }
@@ -123,7 +123,7 @@ mod tests {
         grid.cell_mut(LineColumn::new(0, 1)).value = CellValue::Star;
         grid.cell_mut(LineColumn::new(0, 4)).value = CellValue::Star;
 
-        if let Err(BadRulerError::TooManyStarsInZone(GridSurfer::Region(region))) =
+        if let Err(BadRuleError::TooManyStarsInZone(GridSurfer::Region(region))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(
@@ -145,7 +145,7 @@ mod tests {
         grid.cell_mut(LineColumn::new(0, 0)).value = CellValue::NoStar;
         grid.cell_mut(LineColumn::new(1, 0)).value = CellValue::NoStar;
 
-        if let Err(BadRulerError::NotEnoughStarsInZone(GridSurfer::Region(region))) =
+        if let Err(BadRuleError::NotEnoughStarsInZone(GridSurfer::Region(region))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(region, 'A',
@@ -165,7 +165,7 @@ mod tests {
         grid.cell_mut(LineColumn::new(1, 0)).value = CellValue::Star;
         grid.cell_mut(LineColumn::new(1, 4)).value = CellValue::Star;
 
-        if let Err(BadRulerError::TooManyStarsInZone(GridSurfer::Line(line))) =
+        if let Err(BadRuleError::TooManyStarsInZone(GridSurfer::Line(line))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(
@@ -188,7 +188,7 @@ mod tests {
             grid.cell_mut(LineColumn::new(1, column)).value = CellValue::NoStar;
         }
 
-        if let Err(BadRulerError::NotEnoughStarsInZone(GridSurfer::Line(line))) =
+        if let Err(BadRuleError::NotEnoughStarsInZone(GridSurfer::Line(line))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(line, 1,
@@ -208,7 +208,7 @@ mod tests {
         grid.cell_mut(LineColumn::new(0, 1)).value = CellValue::Star;
         grid.cell_mut(LineColumn::new(4, 1)).value = CellValue::Star;
 
-        if let Err(BadRulerError::TooManyStarsInZone(GridSurfer::Column(column))) =
+        if let Err(BadRuleError::TooManyStarsInZone(GridSurfer::Column(column))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(
@@ -231,7 +231,7 @@ mod tests {
             grid.cell_mut(LineColumn::new(line, 1)).value = CellValue::NoStar;
         }
 
-        if let Err(BadRulerError::NotEnoughStarsInZone(GridSurfer::Column(column))) =
+        if let Err(BadRuleError::NotEnoughStarsInZone(GridSurfer::Column(column))) =
             check_bad_rules(&grid_handler, &grid)
         {
             assert_eq!(column, 1,
