@@ -36,7 +36,7 @@ impl Display for GoodRule {
             Self::InvariantWithZone(surfer, actions) => {
                 write!(
                     f,
-                    "Toutes les possibilités pour La zone {surfer} impliquent la seule possibilité : {}",
+                    "Toutes les possibilités pour {surfer} impliquent la seule possibilité : {}",
                     display_vec_actions(actions)
                 )
             }
@@ -73,4 +73,54 @@ pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRu
     }
 
     Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::fs::File;
+    use std::io::Read;
+
+    use crate::GridParser;
+
+    #[test]
+    fn test_grids() {
+        // Liste des grilles d'exemple
+        let grid_filenames_and_nb_stars = vec![
+            ("./test_grids/test01.txt", 1),
+            ("./test_grids/facile01_2.txt", 2),
+            ("./test_grids/moyen01_2.txt", 2),
+        ];
+
+        for (grid_file_name, nb_stars) in grid_filenames_and_nb_stars {
+            // Ouverture du fichier
+            println!("Fichier : {grid_file_name}");
+            let mut file = File::open(grid_file_name).unwrap();
+            // Lecture du fichier
+            let mut file_contents = String::new();
+            file.read_to_string(&mut file_contents).unwrap();
+            // Conversion en Grid
+            let grid_parser = GridParser::try_from(file_contents.as_str()).unwrap();
+            let grid_handler = GridHandler::new(&grid_parser, nb_stars);
+            let mut grid = Grid::from(&grid_handler);
+            // Boucle de résolution
+            loop {
+                match get_good_rule(&grid_handler, &grid) {
+                    Ok(option_good_rule) => {
+                        if option_good_rule.is_some() {
+                            let good_rule = option_good_rule.unwrap();
+                            grid.apply_good_rule(&good_rule);
+                        } else {
+                            break;
+                        }
+                    }
+                    Err(bad_rule) => {
+                        panic!("{bad_rule} !!!");
+                    }
+                }
+            }
+            assert!(grid_handler.is_done(&grid));
+        }
+    }
 }

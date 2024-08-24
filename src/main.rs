@@ -11,11 +11,13 @@ use star_battle::GridParser;
 
 /// Message d'aide pour l'utilisateur
 const HELP_MESSAGE: &str = "
-STAR BATTLE Usage: ./star-battle <grille>
+STAR BATTLE Usage: ./star-battle <grille> {<nb étoiles>}
 
 <grille> est le nom d'un fichier contenant une grille à résoudre.
+<nb_étoiles> est le nombre d'étoiles à placer dans chaque ligne, colonne et région de la grille.
 
-Un fichier contenant une grille à résoudre est, par exemple :
+Le fichier <grille> définit chaque région de la grille par un caractère.
+Par exemple :
 
 # Ligne de commentaire
 ABBBB
@@ -28,11 +30,18 @@ DEEED
 fn main() {
     // Nom du fichier contenant la grille à résoudre en paramètre
     let args: Vec<String> = env::args().collect();
-    let file_name = if args.len() == 2 {
-        &args[1]
-    } else {
-        println!("{HELP_MESSAGE}");
-        return;
+    let (file_name, nb_stars) = match args.len() {
+        2 => (&args[1], 1),
+        3 => (
+            &args[1],
+            args[2]
+                .parse::<usize>()
+                .expect("Le nombre d'étoiles doit être un nombre"),
+        ),
+        _ => {
+            println!("{HELP_MESSAGE}");
+            return;
+        }
     };
 
     // Demande d'aide ?
@@ -44,7 +53,7 @@ fn main() {
     // Traitement du contenu du fichier
     match read_lines(file_name) {
         Ok(lines) => match GridParser::try_from(&lines) {
-            Ok(grid_parsed) => solve(&grid_parsed, 1),
+            Ok(grid_parsed) => solve(&grid_parsed, nb_stars),
 
             Err(e) => {
                 println!("Erreur dans le fichier {file_name}: {e}");
@@ -58,7 +67,7 @@ fn solve(grid_parsed: &GridParser, nb_stars: usize) {
     let grid_handler = GridHandler::new(grid_parsed, nb_stars);
     let mut grid = Grid::from(&grid_handler);
 
-    println!("Grid:\n{}", grid_handler.display(&grid, true));
+    println!("\nGrid {nb_stars}★\n{}", grid_handler.display(&grid, true));
     loop {
         match get_good_rule(&grid_handler, &grid) {
             Ok(option_good_rule) => {

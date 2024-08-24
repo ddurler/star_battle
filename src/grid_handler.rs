@@ -34,6 +34,7 @@ impl GridHandler {
         let nb_columns = parser.nb_columns();
         assert!(nb_lines > 0, "nb_lines doit être > 0");
         assert!(nb_columns > 0, "nb_columns doit être > 0");
+        assert!(nb_stars > 0, "nb_stars doit être > 0");
 
         // Liste des regions de la grille
         let mut regions: Vec<char> = parser.regions();
@@ -47,7 +48,6 @@ impl GridHandler {
 
         // Pour mettre nb_stars sans qu'elles se touchent, il faut au moins ((2 * nb_stars) - 1) cases...
         let min_nb_cells = (2 * nb_stars) - 1;
-        assert!(nb_stars > 0, "nb_stars doit être > 0");
         assert!(
             nb_lines >= min_nb_cells,
             "Trop d'étoiles à placer ({nb_stars}) pour une grille de {nb_lines} lignes"
@@ -108,6 +108,20 @@ impl GridHandler {
     #[must_use]
     pub fn cell_region(&self, line_column: LineColumn) -> Region {
         self.cells_region[line_column.line][line_column.column]
+    }
+
+    /// Nombre de cases dans une région
+    #[must_use]
+    pub fn region_nb_cells(&self, region: Region) -> usize {
+        let mut nb = 0;
+        for line in 0..self.nb_lines() {
+            for column in 0..self.nb_columns() {
+                if self.cell_region(LineColumn::new(line, column)) == region {
+                    nb += 1;
+                }
+            }
+        }
+        nb
     }
 
     /// Liste des cases adjacentes d'une case de la grille (y compris en diagonale)

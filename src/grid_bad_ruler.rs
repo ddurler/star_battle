@@ -32,20 +32,20 @@ pub enum BadRuleError {
 pub fn check_bad_rules(handler: &GridHandler, grid: &Grid) -> Result<(), BadRuleError> {
     check_no_star_adjacent(handler, grid)?;
     for region in handler.regions() {
-        check_zone(handler, grid, GridSurfer::Region(region))?;
+        check_zone(handler, grid, &GridSurfer::Region(region))?;
     }
     for line in 0..handler.nb_lines() {
-        check_zone(handler, grid, GridSurfer::Line(line))?;
+        check_zone(handler, grid, &GridSurfer::Line(line))?;
     }
     for column in 0..handler.nb_columns() {
-        check_zone(handler, grid, GridSurfer::Column(column))?;
+        check_zone(handler, grid, &GridSurfer::Column(column))?;
     }
     Ok(())
 }
 
 /// Parcours les cases de la grille pour vérifier qu'aucune étoile n'est adjacent à une autre étoile
 fn check_no_star_adjacent(handler: &GridHandler, grid: &Grid) -> Result<(), BadRuleError> {
-    for line_column in handler.surfer(grid, GridSurfer::AllCells) {
+    for line_column in handler.surfer(grid, &GridSurfer::AllCells) {
         let cell = grid.cell(line_column);
         if cell.value == CellValue::Star {
             for adjacent_line_column in handler.adjacent_cells(line_column) {
@@ -63,7 +63,7 @@ fn check_no_star_adjacent(handler: &GridHandler, grid: &Grid) -> Result<(), BadR
 }
 
 /// Vérifie la validité du nombre d'étoile sur une zone (line, colonne ou région).<br>
-fn check_zone(handler: &GridHandler, grid: &Grid, surfer: GridSurfer) -> Result<(), BadRuleError> {
+fn check_zone(handler: &GridHandler, grid: &Grid, surfer: &GridSurfer) -> Result<(), BadRuleError> {
     let mut nb_stars = 0;
     let mut nb_possible_stars = 0;
 
@@ -76,9 +76,9 @@ fn check_zone(handler: &GridHandler, grid: &Grid, surfer: GridSurfer) -> Result<
     }
 
     if nb_stars > handler.nb_stars() {
-        return Err(BadRuleError::TooManyStarsInZone(surfer));
+        return Err(BadRuleError::TooManyStarsInZone(*surfer));
     } else if nb_stars + nb_possible_stars < handler.nb_stars() {
-        return Err(BadRuleError::NotEnoughStarsInZone(surfer));
+        return Err(BadRuleError::NotEnoughStarsInZone(*surfer));
     }
 
     Ok(())

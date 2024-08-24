@@ -11,7 +11,7 @@ use crate::GridSurfer;
 /// Cherche si une étoile déjà placée à des cases adjacentes non définies.
 /// Si oui, ces cases peuvent être définie comme `NoStar`
 pub fn rule_no_star_adjacent_to_star(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    for line_column in handler.surfer(grid, GridSurfer::AllCells) {
+    for line_column in handler.surfer(grid, &GridSurfer::AllCells) {
         if grid.cell(line_column).is_star() {
             let unknown_adjacent_cells: Vec<GridAction> = handler
                 .adjacent_cells(line_column)
@@ -61,7 +61,7 @@ mod tests {
                 assert_eq!(line_column, center_line_column);
                 assert_eq!(actions.len(), 8);
                 let adjacent_to_center_line_column =
-                    grid_handler.surfer(&grid, GridSurfer::Adjacent(center_line_column));
+                    grid_handler.surfer(&grid, &GridSurfer::Adjacent(center_line_column));
                 for action in actions {
                     match action {
                         GridAction::SetNoStar(line_column) => {

@@ -16,24 +16,52 @@ use crate::LineColumn;
 /// Puis examine l'ensemble des combinaisons pour déterminer si le contenu d'une case est commun
 /// à toutes ces combinaisons.
 pub fn rule_complete_star_number(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    // Parcours toutes les régions de la grille
+    // Liste des zones à examiner avec le nombre d'étoiles attendu
+    //
+    // Pour que la règle trouvée soit 'compréhensible' par un humain, on parcours les zones selon
+    // une complexité qui correspond avec un raisonnement humain...
+    let mut zones = Vec::new();
+
     for region in handler.regions() {
-        // println!(">>> Region {region}");
-        // println!(">>>");
-        let grid_surfer = GridSurfer::Region(region);
-        let surfer = handler.surfer(grid, grid_surfer);
-        let mut collector = Collector::new(handler, grid, &surfer, handler.nb_stars());
-        collector.collect_possible_grids();
-        // for grid in collector.possible_grids {
-        //     println!("Possible grid:\n{}", handler.display(&grid));
-        // }
-        let invariant_actions = collector.check_for_invariants();
-        if !invariant_actions.is_empty() {
-            return Some(GoodRule::InvariantWithZone(grid_surfer, invariant_actions));
-        }
+        zones.push((GridSurfer::Region(region), handler.nb_stars()));
     }
 
+    // Parcours de toutes les lignes
+    for line in 0..handler.nb_lines() {
+        zones.push((GridSurfer::Line(line), handler.nb_stars()));
+    }
+
+    // Parcours de toutes les colonnes
+    for column in 0..handler.nb_columns() {
+        zones.push((GridSurfer::Column(column), handler.nb_stars()));
+    }
+
+    // Examine toutes les zones prévues
+    for (zone, nb_stars) in zones {
+        let invariant_actions = try_complete_start_number(handler, grid, &zone, nb_stars);
+        if !invariant_actions.is_empty() {
+            return Some(GoodRule::InvariantWithZone(zone, invariant_actions));
+        }
+    }
     None
+}
+
+/// Vérifie si la règle est applicable sur une zone définie
+fn try_complete_start_number(
+    handler: &GridHandler,
+    grid: &Grid,
+    grid_surfer: &GridSurfer,
+    nb_stars: usize,
+) -> Vec<GridAction> {
+    // println!(">>> Region {region}");
+    // println!(">>>");
+    let surfer = handler.surfer(grid, grid_surfer);
+    let mut collector = Collector::new(handler, grid, &surfer, nb_stars);
+    collector.collect_possible_grids();
+    // for grid in &collector.possible_grids {
+    //     println!("Possible grid:\n{}", handler.display(grid, true));
+    // }
+    collector.check_for_invariants()
 }
 
 /// Structure pour la recherche des combinaisons possibles qui positionnent
@@ -129,7 +157,7 @@ impl<'a> Collector<'a> {
                 self.possible_grids.extend(new_collector.possible_grids);
             }
             // else {
-            //     println!("Impossible grid:\n{}", self.handler.display(&new_grid));
+            //     println!("Impossible grid:\n{}", self.handler.display(&new_grid, true));
             // }
 
             //  Puis on construit une autre grille possible pour la zone sans une étoile dans cette case
@@ -153,7 +181,7 @@ impl<'a> Collector<'a> {
         let mut cells = Vec::new();
         // Liste des 'Variant' de ces cases
         let mut variants = Vec::new();
-        for line_column in self.handler.surfer(self.grid, GridSurfer::AllCells) {
+        for line_column in self.handler.surfer(self.grid, &GridSurfer::AllCells) {
             if self.grid.cell(line_column).is_unknown() {
                 cells.push(line_column);
                 variants.push(Variant::Init);
@@ -346,5 +374,79 @@ mod tests {
         }
 
         assert!(grid_handler.is_done(&grid));
+    }
+
+    #[test]
+    fn test_moyen01_2() {
+        let grid_text = "
+# Exemple de grille 2★
+# Bataille d'étoiles sur Android
+AABBBCCCC
+AAABBCCCC
+AAABBCCCC
+ADDEEEDCF
+ADDDDDDFF
+DDDDDGGGF
+HDHHDFGGF
+HHHHIFFFF
+HHHIIIIIF
+        ";
+
+        let grid_parser = GridParser::try_from(grid_text).unwrap();
+        let grid_handler = GridHandler::new(&grid_parser, 2);
+        let mut grid = Grid::from(&grid_handler);
+
+        // Etape particulière de la résolution
+        grid.cell_mut(LineColumn::new(0, 1)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(0, 2)).value = CellValue::Star;
+        grid.cell_mut(LineColumn::new(0, 3)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(0, 5)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(1, 1)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(1, 2)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(1, 3)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(1, 5)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(2, 2)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(2, 3)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(2, 4)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(2, 5)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(2, 6)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(3, 2)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(3, 3)).value = CellValue::Star;
+        grid.cell_mut(LineColumn::new(3, 4)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(3, 5)).value = CellValue::Star;
+        grid.cell_mut(LineColumn::new(3, 6)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(4, 2)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(4, 3)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(4, 4)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(4, 5)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(4, 6)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(5, 4)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(5, 5)).value = CellValue::Star;
+        grid.cell_mut(LineColumn::new(5, 6)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(5, 8)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(6, 4)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(6, 5)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(6, 6)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(6, 8)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(7, 3)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(7, 6)).value = CellValue::NoStar;
+        grid.cell_mut(LineColumn::new(7, 7)).value = CellValue::NoStar;
+
+        grid.cell_mut(LineColumn::new(8, 5)).value = CellValue::NoStar;
+
+        println!("Grille:\n{}", grid_handler.display(&grid, true));
+
+        // En étudiant les possibilités de la première ligne, LineColumn(0, 7) ne peut être que NoStar
+        // (Si on met une étoile dans cette case, on ne peut pas placer les 2 étoiles dans la colonne 6)
+        let grid_surfer = GridSurfer::Line(0);
+        let vec_actions = try_complete_start_number(&grid_handler, &grid, &grid_surfer, 2);
+        assert!(!vec_actions.is_empty());
     }
 }

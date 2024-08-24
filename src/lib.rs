@@ -198,7 +198,7 @@ let grid_handler = GridHandler::new(&grid_parser, 1);
 let grid = Grid::from(&grid_handler);
 
 // Liste des cases d'une région
-let grid_surfer = grid_handler.surfer(&grid, GridSurfer::Region('A'));
+let grid_surfer = grid_handler.surfer(&grid, &GridSurfer::Region('A'));
 assert_eq!(grid_surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
 ```
 
