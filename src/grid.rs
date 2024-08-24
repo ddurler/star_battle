@@ -1,5 +1,7 @@
 //! Contenu des case de la grille.
 
+use std::fmt::Display;
+
 use crate::CellValue;
 use crate::GridCell;
 use crate::GridHandler;
@@ -13,6 +15,22 @@ pub struct Grid {
 
     /// Cases de la grille
     cells: Vec<Vec<GridCell>>,
+}
+
+impl Display for Grid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for line in 0..self.nb_lines() {
+            for column in 0..self.nb_columns() {
+                match self.cell(LineColumn::new(line, column)).value {
+                    CellValue::Star => write!(f, " *")?,
+                    CellValue::NoStar => write!(f, " -")?,
+                    CellValue::Unknown => write!(f, " ?")?,
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
 }
 
 impl From<&GridHandler> for Grid {

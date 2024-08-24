@@ -1,67 +1,16 @@
-//! Règles de construction/résolution d'une grille.
+//! Règle de construction/résolution d'une grille.
 //!
-//! Ce module expose les règles permettant d'avancer dans la résolution d'une grille.
+//! Recherche les cases adjacentes à une étoile qui ne peuvent pas contenir une étoile.
 
-use std::fmt::Display;
-
-use crate::check_bad_rules;
-use crate::BadRuleError;
+use crate::GoodRule;
 use crate::Grid;
 use crate::GridAction;
 use crate::GridHandler;
 use crate::GridSurfer;
-use crate::LineColumn;
-
-use crate::grid_action::display_vec_actions;
-
-/// Énumération des règles applicables à la construction/résolution d'une grille
-pub enum GoodRule {
-    /// Indique les cases adjacentes à une étoile qui ne peuvent pas contenir une étoile
-    NoStarAdjacentToStar(LineColumn, Vec<GridAction>),
-}
-
-impl Display for GoodRule {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NoStarAdjacentToStar(line_column, actions) => {
-                write!(f, "Les cases adjacentes à l'étoile en {line_column} ne peuvent pas contenir une étoile : {}", display_vec_actions(actions))
-            }
-        }
-    }
-}
-
-impl Grid {
-    /// Application d'une règle de construction sur une grille
-    pub fn apply_good_rule(&mut self, rule: &GoodRule) {
-        match rule {
-            GoodRule::NoStarAdjacentToStar(_, actions) => {
-                for action in actions {
-                    self.apply_action(action);
-                }
-            }
-        }
-    }
-}
-
-/// Identification d'une règle de construction applicable à la grille.<br>
-/// Retourne une règle applicable à la construction/résolution de la grille si trouvé. None sinon.
-/// ### Errors
-/// Retourne un [`BadRuleError`] si la grille n'est pas valide
-pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRule>, BadRuleError> {
-    check_bad_rules(handler, grid)?;
-
-    for f in [rule_no_star_adjacent_to_star] {
-        if let Some(rule) = f(handler, grid) {
-            return Ok(Some(rule));
-        }
-    }
-
-    Ok(None)
-}
 
 /// Cherche si une étoile déjà placée à des cases adjacentes non définies.
 /// Si oui, ces cases peuvent être définie comme `NoStar`
-fn rule_no_star_adjacent_to_star(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
+pub fn rule_no_star_adjacent_to_star(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
     for line_column in handler.surfer(grid, GridSurfer::AllCells) {
         if grid.cell(line_column).is_star() {
             let unknown_adjacent_cells: Vec<GridAction> = handler
@@ -86,6 +35,7 @@ mod tests {
     use super::*;
 
     use crate::GridParser;
+    use crate::LineColumn;
 
     // Construction d'un objet GridHandler et d'un Grid à partir d'une grille de test
     fn get_test_grid() -> (GridHandler, Grid) {

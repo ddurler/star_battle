@@ -159,6 +159,8 @@ assert_eq!(grid.nb_columns(), 5);
 On peut ainsi utiliser la structure [`Grid`] pour résoudre le jeu en clonant cette structure et en
 postulant sur la valeur des cases de la grille pour évaluer les possibilités.
 
+La fonction [`GridHandler::is_done`] retourne `true` si toutes les cases de la grille ont une valeur définie.
+
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, LineColumn, CellValue};
 
@@ -262,12 +264,29 @@ assert_eq!(grid.cell(LineColumn::new(1, 1)).value, CellValue::NoStar);
 [`GoodRule`] identifie les règles qui permettent d'avancer dans la construction/résolution d"une grille :
 
 * `NoStarAdjacentToStar(LineColumn, Vec<GridAction>)`:  Indique les cases adjacentes à une étoile qui ne peuvent
-   pas contenir une étoile et indique les actions à effectuer pour les définir.
+   pas contenir une étoile et indique les actions à effectuer pour les définir
+* `InvariantWithZone(GridSurfer, Vec<GridAction>)`: Indique que quelle que soit la façon de placer les étoiles
+   dans une zone, des cases n'ont toujours qu'une seule et même possibilité
 
 La fonction [`get_good_rule`] recherche un règle [`GoodRule`] applicable à une grille.<br>
 Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valide.<br>
 Sinon un `Option<GoodRule>` est retourné. None signifie alors qu'aucune règle permettant d'avancer dans la
-construction de la grille n'a été trouvé.
+construction de la grille n'a été trouvée.
+
+```rust
+use star_battle::{GridParser, GridHandler, Grid, get_good_rule};
+
+let grid_parser = GridParser::try_from(vec!["ABBBB", "ABBBB", "CCBBB", "DDDDD", "DEEED"]).unwrap();
+let grid_handler = GridHandler::new(&grid_parser, 1);
+let mut grid = Grid::from(&grid_handler);
+
+let ok_good_rule = get_good_rule(&grid_handler, &grid);
+assert!(ok_good_rule.is_ok());
+let some_good_rule = ok_good_rule.unwrap();
+assert!(some_good_rule.is_some());
+let good_rule = some_good_rule.unwrap();
+grid.apply_good_rule(&good_rule);
+```
 
 */
 
@@ -289,6 +308,7 @@ mod line_column;
 
 // Internal
 use grid_parser_checker::GridParserChecker;
+use line_column::{display_column, display_line};
 
 // Exported
 pub use cell_value::CellValue;

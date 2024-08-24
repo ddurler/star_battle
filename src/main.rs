@@ -4,6 +4,9 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
+use star_battle::get_good_rule;
+use star_battle::Grid;
+use star_battle::GridHandler;
 use star_battle::GridParser;
 
 /// Message d'aide pour l'utilisateur
@@ -41,14 +44,44 @@ fn main() {
     // Traitement du contenu du fichier
     match read_lines(file_name) {
         Ok(lines) => match GridParser::try_from(&lines) {
-            Ok(grid_parsed) => {
-                dbg!(grid_parsed);
-            }
+            Ok(grid_parsed) => solve(&grid_parsed, 1),
+
             Err(e) => {
                 println!("Erreur dans le fichier {file_name}: {e}");
             }
         },
         Err(e) => println!("Erreur dans le fichier {file_name}: {e}"),
+    }
+}
+
+fn solve(grid_parsed: &GridParser, nb_stars: usize) {
+    let grid_handler = GridHandler::new(grid_parsed, nb_stars);
+    let mut grid = Grid::from(&grid_handler);
+
+    println!("Grid:\n{}", grid_handler.display(&grid, true));
+    loop {
+        match get_good_rule(&grid_handler, &grid) {
+            Ok(option_good_rule) => {
+                if option_good_rule.is_some() {
+                    let good_rule = option_good_rule.unwrap();
+                    println!("{good_rule}");
+                    grid.apply_good_rule(&good_rule);
+                    println!("\n{}", grid_handler.display(&grid, true));
+                } else {
+                    break;
+                }
+            }
+            Err(bad_rule) => {
+                println!("{bad_rule} !!!");
+                break;
+            }
+        }
+    }
+
+    if grid_handler.is_done(&grid) {
+        println!("Grille résolue !\n");
+    } else {
+        println!("Grille non résolue :(\n");
     }
 }
 
@@ -84,7 +117,10 @@ mod tests {
 
         for test_file in test_files {
             let lines = read_lines(test_file).unwrap();
-            let _grid_parsed = GridParser::try_from(&lines).unwrap();
+            let grid_parsed = GridParser::try_from(&lines).unwrap();
+            let grid_handler = GridHandler::new(&grid_parsed, 1);
+            let grid = Grid::from(&grid_handler);
+            println!("Grid: \n{grid}");
         }
     }
 }

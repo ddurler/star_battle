@@ -1,9 +1,12 @@
 //! Structure d'une grille en cours de résolution.
 
+use crate::check_bad_rules;
+use crate::CellValue;
 use crate::Grid;
 use crate::GridParser;
 use crate::LineColumn;
 use crate::Region;
+use crate::{display_column, display_line};
 
 /// Description d'une grille en cours de résolution
 #[derive(Debug)]
@@ -156,6 +159,58 @@ impl GridHandler {
             }
         }
         false
+    }
+
+    /// Retourne true si toutes les cases de la grille sont définies et que la grille est 'viable'
+    #[must_use]
+    pub fn is_done(&self, grid: &Grid) -> bool {
+        for line in 0..self.nb_lines() {
+            for column in 0..self.nb_columns() {
+                if grid.cell(LineColumn::new(line, column)).value == CellValue::Unknown {
+                    return false;
+                }
+            }
+        }
+        check_bad_rules(self, grid).is_ok()
+    }
+
+    /// Affichage du contenu d'une grille.<br>
+    /// Si `with_coordinates` est `true`, affiche les coordonnées
+    /// horizontales ('A", 'B', ...) et verticales (1, 2, ...)
+    #[must_use]
+    pub fn display(&self, grid: &Grid, with_coordinates: bool) -> String {
+        let mut output = String::new();
+        if with_coordinates {
+            // On indique les lettre 'A', 'B', ... en entête pour les coordonnées horizontales
+            output.push_str("   "); /* Espace pour les coordonnées verticales à gauche */
+            for column in 0..self.nb_columns() {
+                output.push_str(&format!(" {:<2}", display_column(column)));
+            }
+            output.push('\n');
+            // Suivi d'une ligne de séparation
+            output.push_str("   ");
+            for _ in 0..self.nb_columns() {
+                output.push_str("---");
+            }
+            output.push('\n');
+        }
+        for line in 0..self.nb_lines() {
+            if with_coordinates {
+                // On indique les chiffres 1, 2, ... en entête pour les coordonnées verticales
+                output.push_str(&format!("{:>2}|", display_line(line)));
+            }
+            for column in 0..self.nb_columns() {
+                let line_column = LineColumn::new(line, column);
+                let region = self.cell_region(line_column);
+                match grid.cell(line_column).value {
+                    CellValue::Star => output.push_str(&format!(" {region}*")),
+                    CellValue::Unknown => output.push_str(&format!(" {region}?")),
+                    CellValue::NoStar => output.push_str(&format!(" {region}-")),
+                }
+            }
+            output.push('\n');
+        }
+        output
     }
 }
 
