@@ -15,11 +15,12 @@ STAR BATTLE Usage: ./star-battle <grille> {<nb étoiles>}
 
 <grille> est le nom d'un fichier contenant une grille à résoudre.
 <nb_étoiles> est le nombre d'étoiles à placer dans chaque ligne, colonne et région de la grille.
+Par défaut, ce nombre d'étoile est 1.
 
 Le fichier <grille> définit chaque région de la grille par un caractère.
 Par exemple :
 
-# Ligne de commentaire
+# Exemple de grille 1★ avec 5 régions 'A', 'B', 'C', 'D' et 'E'
 ABBBB
 ABBBB
 CCBBB

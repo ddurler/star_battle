@@ -12,38 +12,78 @@ use crate::GridSurfer;
 use crate::LineColumn;
 
 /// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
-/// dans une zone.
-/// Puis examine l'ensemble des combinaisons pour déterminer si le contenu d'une case est commun
-/// à toutes ces combinaisons.
+/// dans différentes zones (région, ligne, colonne, ...).
+/// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
+/// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
 pub fn rule_complete_star_number(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    // Liste des zones à examiner avec le nombre d'étoiles attendu
-    //
     // Pour que la règle trouvée soit 'compréhensible' par un humain, on parcours les zones selon
     // une complexité qui correspond avec un raisonnement humain...
+    // On utilise pour cela un métrique qui correspond avec le nombre de combinaisons à explorer pour la zone.
+
+    // zones: [(GridSurfer, nb_stars, combinaisons_count)]
     let mut zones = Vec::new();
 
+    // Closure pour compléter la liste des zones à examiner
+    let mut add_zone = |grid_surfer: GridSurfer, nb_stars: usize| {
+        let nb_combinaisons = combinaisons_count(handler, grid, &grid_surfer, nb_stars);
+        zones.push((grid_surfer, nb_stars, nb_combinaisons));
+    };
+
     for region in handler.regions() {
-        zones.push((GridSurfer::Region(region), handler.nb_stars()));
+        add_zone(GridSurfer::Region(region), handler.nb_stars());
     }
 
     // Parcours de toutes les lignes
     for line in 0..handler.nb_lines() {
-        zones.push((GridSurfer::Line(line), handler.nb_stars()));
+        add_zone(GridSurfer::Line(line), handler.nb_stars());
     }
 
     // Parcours de toutes les colonnes
     for column in 0..handler.nb_columns() {
-        zones.push((GridSurfer::Column(column), handler.nb_stars()));
+        add_zone(GridSurfer::Column(column), handler.nb_stars());
     }
 
+    // Tri des différentes zones par ordre croissant de combinaisons possible
+    zones.sort_by(|a, b| a.2.cmp(&b.2));
+
     // Examine toutes les zones prévues
-    for (zone, nb_stars) in zones {
+    for (zone, nb_stars, _) in zones {
         let invariant_actions = try_complete_start_number(handler, grid, &zone, nb_stars);
         if !invariant_actions.is_empty() {
             return Some(GoodRule::InvariantWithZone(zone, invariant_actions));
         }
     }
     None
+}
+
+/// Calcul le nombre de combinaisons possible pour placer toutes les étoiles dans une zone
+fn combinaisons_count(
+    grid_handler: &GridHandler,
+    grid: &Grid,
+    grid_surfer: &GridSurfer,
+    nb_stars: usize,
+) -> usize {
+    // Nombre d'étoiles déjà placées dans la zone
+    let cur_nb_stars =
+        grid_handler.surfer_cells_with_value_count(grid, grid_surfer, &CellValue::Star);
+    if cur_nb_stars >= nb_stars {
+        return usize::MAX; // Pas de combinaison possible
+    }
+    // Nombre d'étoiles restant à placer dans la zone
+    let nb_stars_left = nb_stars - cur_nb_stars;
+    // Nombre de case non définies dans la zone
+    let mut nb_cells =
+        grid_handler.surfer_cells_with_value_count(grid, grid_surfer, &CellValue::Unknown);
+    if nb_cells <= nb_stars_left {
+        return 0; // Pas de combinaison possible
+    }
+    let mut nb_combinaisons = 1;
+    for _ in 0..nb_stars_left {
+        // Pour chaque étoile restant à placer, on ajoute le nombre de combinaisons possible
+        nb_combinaisons *= nb_cells;
+        nb_cells -= 1;
+    }
+    nb_combinaisons
 }
 
 /// Vérifie si la règle est applicable sur une zone définie
@@ -354,6 +394,32 @@ mod tests {
     }
 
     #[test]
+    fn test_combinaisons_count() {
+        let (grid_handler, mut grid) = get_test_grid();
+
+        // La zone A contient 2 cases non définies => 2 combinaisons pour placer une étoile
+        assert_eq!(
+            combinaisons_count(&grid_handler, &grid, &GridSurfer::Region('A'), 1),
+            2
+        );
+
+        // La ligne 0 contient 5 cases non définies => 5 x 4 = 20 combinaisons pour placer 2 étoiles
+        assert_eq!(
+            combinaisons_count(&grid_handler, &grid, &GridSurfer::Line(0), 2),
+            20
+        );
+
+        // On place une étoile en (0, 0)
+        grid.cell_mut(LineColumn::new(0, 0)).value = CellValue::Star;
+
+        // La colonne 0 contient 1 étoiles et 4 cases non définies => 4 combinaisons pour placer 2 étoiles
+        assert_eq!(
+            combinaisons_count(&grid_handler, &grid, &GridSurfer::Column(0), 2),
+            4
+        );
+    }
+
+    #[test]
     fn test_complete_start_number() {
         // La grille de test peut être complètement résolue avec cette seule règle sur les zones
         let (grid_handler, mut grid) = get_test_grid();
@@ -378,6 +444,7 @@ mod tests {
 
     #[test]
     fn test_moyen01_2() {
+        // Test extrait d'une étape de résolution de la grille "./test_grid/moyen01_2.txt"
         let grid_text = "
 # Exemple de grille 2★
 # Bataille d'étoiles sur Android

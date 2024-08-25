@@ -5,6 +5,7 @@
 use std::fmt::Display;
 
 use crate::line_column::{display_column, display_line};
+use crate::CellValue;
 use crate::Grid;
 use crate::GridCell;
 use crate::GridHandler;
@@ -77,6 +78,26 @@ impl GridHandler {
 
         cells
     }
+
+    /// Retourne le nombre de cases sans la zone définie par le `GridSurfer`
+    #[must_use]
+    pub fn surfer_cells_count(&self, grid: &Grid, surfer: &GridSurfer) -> usize {
+        self.surfer(grid, surfer).len()
+    }
+
+    /// Retourne le nombre de cases contenant une valeur particulière dans la zone définie par le `GridSurfer`
+    #[must_use]
+    pub fn surfer_cells_with_value_count(
+        &self,
+        grid: &Grid,
+        surfer: &GridSurfer,
+        value: &CellValue,
+    ) -> usize {
+        self.surfer(grid, surfer)
+            .iter()
+            .filter(|line_column| grid.cell(**line_column).value == *value)
+            .count()
+    }
 }
 
 #[cfg(test)]
@@ -144,6 +165,50 @@ mod tests {
                 .filter(|line_column| line_column.column == 1)
                 .count(),
             5
+        );
+    }
+
+    #[test]
+    fn test_surfer_cells_count() {
+        let (grid_handler, grid) = get_test_grid();
+        assert_eq!(
+            grid_handler.surfer_cells_count(&grid, &GridSurfer::Region('A')),
+            2
+        );
+    }
+
+    #[test]
+    fn test_surfer_cells_with_value_count() {
+        let (grid_handler, mut grid) = get_test_grid();
+
+        // Par défaut, toutes les cases sont à la valeur `CellValue::Unknown`
+        // On place une étoile et une case qui ne peut pas contenir d'étoile sur la 1ere ligne
+        grid.cell_mut(LineColumn::new(0, 1)).value = CellValue::Star;
+        grid.cell_mut(LineColumn::new(0, 3)).value = CellValue::NoStar;
+
+        assert_eq!(
+            grid_handler.surfer_cells_with_value_count(
+                &grid,
+                &GridSurfer::Line(0),
+                &CellValue::Star
+            ),
+            1
+        );
+        assert_eq!(
+            grid_handler.surfer_cells_with_value_count(
+                &grid,
+                &GridSurfer::Line(0),
+                &CellValue::NoStar
+            ),
+            1
+        );
+        assert_eq!(
+            grid_handler.surfer_cells_with_value_count(
+                &grid,
+                &GridSurfer::Line(0),
+                &CellValue::Unknown
+            ),
+            3
         );
     }
 }

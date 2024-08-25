@@ -112,7 +112,7 @@ impl GridHandler {
 
     /// Nombre de cases dans une région
     #[must_use]
-    pub fn region_nb_cells(&self, region: Region) -> usize {
+    pub fn region_cells_count(&self, region: Region) -> usize {
         let mut nb = 0;
         for line in 0..self.nb_lines() {
             for column in 0..self.nb_columns() {
