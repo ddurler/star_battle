@@ -42,6 +42,26 @@ pub fn display_vec_actions(actions: &Vec<GridAction>) -> String {
 }
 
 impl GridAction {
+    /// Retourne la `LineColumn` correspondant à l'action
+    #[must_use]
+    pub const fn line_column(&self) -> LineColumn {
+        match self {
+            Self::SetUnknown(line_column)
+            | Self::SetStar(line_column)
+            | Self::SetNoStar(line_column) => *line_column,
+        }
+    }
+
+    /// Retourne la `CellValue` correspondant à l'action
+    #[must_use]
+    pub const fn value(&self) -> CellValue {
+        match self {
+            Self::SetUnknown(_) => CellValue::Unknown,
+            Self::SetStar(_) => CellValue::Star,
+            Self::SetNoStar(_) => CellValue::NoStar,
+        }
+    }
+
     /// Applique une action à la grille
     pub fn apply_action(&self, grid: &mut Grid) {
         match self {

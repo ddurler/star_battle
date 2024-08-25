@@ -13,8 +13,8 @@ use crate::GridHandler;
 use crate::GridSurfer;
 use crate::LineColumn;
 
-use super::rule_complete_star_number;
 use super::rule_no_star_adjacent_to_star;
+use super::{rule_region_star_complete, rule_zone_star_complete};
 
 /// Énumération des règles applicables à la construction/résolution d'une grille
 #[derive(Clone, Debug)]
@@ -66,7 +66,11 @@ impl Grid {
 pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRule>, BadRuleError> {
     check_bad_rules(handler, grid)?;
 
-    for f in [rule_no_star_adjacent_to_star, rule_complete_star_number] {
+    for f in [
+        rule_no_star_adjacent_to_star,
+        rule_region_star_complete,
+        rule_zone_star_complete,
+    ] {
         if let Some(rule) = f(handler, grid) {
             return Ok(Some(rule));
         }

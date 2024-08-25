@@ -11,19 +11,27 @@ use crate::GridHandler;
 use crate::GridSurfer;
 use crate::LineColumn;
 
+/// Cherche toutes les combinaisons possibles dans les différentes régions.
+/// Version simplifiée de `rule_complete_star_number` qui se limite au contenu des différentes
+/// régions pour une compréhension plus aisées pour un humain
+pub fn rule_region_star_complete(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
+    rule_star_complete(handler, grid, true)
+}
+
 /// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
 /// dans différentes zones (région, ligne, colonne, ...).
 /// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
 /// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
-pub fn rule_complete_star_number(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    // Pour que la règle trouvée soit 'compréhensible' par un humain, on parcours les zones selon
-    // une complexité qui correspond avec un raisonnement humain...
-    // On utilise pour cela un métrique qui correspond avec le nombre de combinaisons à explorer pour la zone.
+pub fn rule_zone_star_complete(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
+    rule_star_complete(handler, grid, false)
+}
 
+/// Méthode générique qui cherche toutes les combinaisons possibles dans les différentes zones ou régions
+fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> Option<GoodRule> {
     // zones: [(GridSurfer, nb_stars, combinaisons_count)]
     let mut zones = Vec::new();
 
-    // Closure pour compléter la liste des zones à examiner
+    // Closure pour compléter la liste des zones à examiner (évite les répétitions de paramètres)
     let mut add_zone = |grid_surfer: GridSurfer, nb_stars: usize| {
         let nb_combinaisons = combinaisons_count(handler, grid, &grid_surfer, nb_stars);
         zones.push((grid_surfer, nb_stars, nb_combinaisons));
@@ -33,14 +41,16 @@ pub fn rule_complete_star_number(handler: &GridHandler, grid: &Grid) -> Option<G
         add_zone(GridSurfer::Region(region), handler.nb_stars());
     }
 
-    // Parcours de toutes les lignes
-    for line in 0..handler.nb_lines() {
-        add_zone(GridSurfer::Line(line), handler.nb_stars());
-    }
+    if !region_only {
+        // Parcours de toutes les lignes
+        for line in 0..handler.nb_lines() {
+            add_zone(GridSurfer::Line(line), handler.nb_stars());
+        }
 
-    // Parcours de toutes les colonnes
-    for column in 0..handler.nb_columns() {
-        add_zone(GridSurfer::Column(column), handler.nb_stars());
+        // Parcours de toutes les colonnes
+        for column in 0..handler.nb_columns() {
+            add_zone(GridSurfer::Column(column), handler.nb_stars());
+        }
     }
 
     // Tri des différentes zones par ordre croissant de combinaisons possible
@@ -48,7 +58,15 @@ pub fn rule_complete_star_number(handler: &GridHandler, grid: &Grid) -> Option<G
 
     // Examine toutes les zones prévues
     for (zone, nb_stars, _) in zones {
-        let invariant_actions = try_complete_start_number(handler, grid, &zone, nb_stars);
+        let mut invariant_actions = try_star_complete(handler, grid, &zone, nb_stars);
+        if region_only {
+            // Ne retient que les cases de la zone examinée
+            invariant_actions = invariant_actions
+                .iter()
+                .filter(|action| handler.surfer(grid, &zone).contains(&action.line_column()))
+                .cloned()
+                .collect();
+        }
         if !invariant_actions.is_empty() {
             return Some(GoodRule::InvariantWithZone(zone, invariant_actions));
         }
@@ -87,7 +105,7 @@ fn combinaisons_count(
 }
 
 /// Vérifie si la règle est applicable sur une zone définie
-fn try_complete_start_number(
+fn try_star_complete(
     handler: &GridHandler,
     grid: &Grid,
     grid_surfer: &GridSurfer,
@@ -427,7 +445,7 @@ mod tests {
         println!("Grille initiale :\n{}", grid_handler.display(&grid, true));
 
         loop {
-            let option_good_rule = rule_complete_star_number(&grid_handler, &grid);
+            let option_good_rule = rule_zone_star_complete(&grid_handler, &grid);
             if option_good_rule.is_some() {
                 let good_rule = option_good_rule.unwrap();
                 println!("{good_rule}");
@@ -513,7 +531,7 @@ HHHIIIIIF
         // En étudiant les possibilités de la première ligne, LineColumn(0, 7) ne peut être que NoStar
         // (Si on met une étoile dans cette case, on ne peut pas placer les 2 étoiles dans la colonne 6)
         let grid_surfer = GridSurfer::Line(0);
-        let vec_actions = try_complete_start_number(&grid_handler, &grid, &grid_surfer, 2);
+        let vec_actions = try_star_complete(&grid_handler, &grid, &grid_surfer, 2);
         assert!(!vec_actions.is_empty());
     }
 }
