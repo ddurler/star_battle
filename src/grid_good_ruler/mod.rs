@@ -3,8 +3,10 @@
 mod good_rule;
 mod rule_no_star_adjacent_to_star;
 mod rule_star_complete;
+mod rule_value_completed;
 
 use rule_no_star_adjacent_to_star::rule_no_star_adjacent_to_star;
 use rule_star_complete::{rule_region_star_complete, rule_zone_star_complete};
+use rule_value_completed::rule_value_completed;
 
 pub use good_rule::{get_good_rule, GoodRule};

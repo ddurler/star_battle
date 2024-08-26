@@ -14,6 +14,7 @@ use crate::GridSurfer;
 use crate::LineColumn;
 
 use super::rule_no_star_adjacent_to_star;
+use super::rule_value_completed;
 use super::{rule_region_star_complete, rule_zone_star_complete};
 
 /// Énumération des règles applicables à la construction/résolution d'une grille
@@ -21,6 +22,12 @@ use super::{rule_region_star_complete, rule_zone_star_complete};
 pub enum GoodRule {
     /// Indique les cases adjacentes à une étoile qui ne peuvent pas contenir une étoile
     NoStarAdjacentToStar(LineColumn, Vec<GridAction>),
+
+    /// Indique les cases restantes dans une zone ne peuvent pas être des étoiles
+    ZoneNoStarCompleted(GridSurfer, Vec<GridAction>),
+
+    /// Indique les cases restantes dans une zone sont forcement des étoiles
+    ZoneStarCompleted(GridSurfer, Vec<GridAction>),
 
     /// Indique que quelle que soit la façon de placer les étoiles dans une zone, des cases n'ont
     /// toujours qu'une seule et même possibilité
@@ -32,6 +39,20 @@ impl Display for GoodRule {
         match self {
             Self::NoStarAdjacentToStar(line_column, actions) => {
                 write!(f, "Les cases adjacentes à l'étoile en {line_column} ne peuvent pas contenir une étoile : {}", display_vec_actions(actions))
+            }
+            Self::ZoneNoStarCompleted(grid_surfer, actions) => {
+                write!(
+                    f,
+                    "Les cases restantes pour {grid_surfer} ne peuvent pas contenir une étoile : {}",
+                    display_vec_actions(actions)
+                )
+            }
+            Self::ZoneStarCompleted(grid_surfer, actions) => {
+                write!(
+                    f,
+                    "Les cases restantes pour {grid_surfer} peuvent être qu'une étoile : {}",
+                    display_vec_actions(actions)
+                )
             }
             Self::InvariantWithZone(surfer, actions) => {
                 write!(
@@ -49,6 +70,8 @@ impl Grid {
     pub fn apply_good_rule(&mut self, rule: &GoodRule) {
         match rule {
             GoodRule::NoStarAdjacentToStar(_, actions)
+            | GoodRule::ZoneNoStarCompleted(_, actions)
+            | GoodRule::ZoneStarCompleted(_, actions)
             | GoodRule::InvariantWithZone(_, actions) => {
                 for action in actions {
                     self.apply_action(action);
@@ -68,6 +91,7 @@ pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRu
 
     for f in [
         rule_no_star_adjacent_to_star,
+        rule_value_completed,
         rule_region_star_complete,
         rule_zone_star_complete,
     ] {

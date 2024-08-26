@@ -37,6 +37,7 @@ fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> 
         zones.push((grid_surfer, nb_stars, nb_combinaisons));
     };
 
+    // Parcours de toutes les régions
     for region in handler.regions() {
         add_zone(GridSurfer::Region(region), handler.nb_stars());
     }
