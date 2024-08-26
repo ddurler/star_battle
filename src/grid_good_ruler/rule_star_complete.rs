@@ -59,15 +59,7 @@ fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> 
 
     // Examine toutes les zones prévues
     for (zone, nb_stars, _) in zones {
-        let mut invariant_actions = try_star_complete(handler, grid, &zone, nb_stars);
-        if region_only {
-            // Ne retient que les cases de la zone examinée
-            invariant_actions = invariant_actions
-                .iter()
-                .filter(|action| handler.surfer(grid, &zone).contains(&action.line_column()))
-                .cloned()
-                .collect();
-        }
+        let invariant_actions = try_star_complete(handler, grid, &zone, nb_stars);
         if !invariant_actions.is_empty() {
             return Some(GoodRule::InvariantWithZone(zone, invariant_actions));
         }
