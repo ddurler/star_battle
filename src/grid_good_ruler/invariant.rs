@@ -42,9 +42,7 @@ impl Variant {
             (Self::Star | Self::NoStar | Self::Unknown | Self::Variable, _) => Self::Variable,
         }
     }
-}
 
-impl Variant {
     /// Examine un ensemble des grilles possibles collectées à partir d'une grille initiale à la recherche
     /// de cases invariantes pour toutes les possibilités de grilles
     pub fn check_for_invariants(

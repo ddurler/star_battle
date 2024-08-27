@@ -265,13 +265,29 @@ assert_eq!(grid.cell(LineColumn::new(1, 1)).value, CellValue::NoStar);
 
 * `NoStarAdjacentToStar(LineColumn, Vec<GridAction>)`:  Indique les cases adjacentes à une étoile qui ne peuvent
    pas contenir une étoile et indique les actions à effectuer pour les définir
+* `ZoneNoStarCompleted`: Indique les cases restantes dans une zone ne peuvent pas être des étoiles
+* `ZoneStarCompleted`: Indique les cases restantes dans une zone sont forcement des étoiles
 * `InvariantWithZone(GridSurfer, Vec<GridAction>)`: Indique que quelle que soit la façon de placer les étoiles
    dans une zone, des cases n'ont toujours qu'une seule et même possibilité
 
-La fonction [`get_good_rule`] recherche un règle [`GoodRule`] applicable à une grille.<br>
+La fonction [`get_good_rule`] recherche une règle [`GoodRule`] applicable à une grille.<br>
 Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valide.<br>
 Sinon un `Option<GoodRule>` est retourné. None signifie alors qu'aucune règle permettant d'avancer dans la
 construction de la grille n'a été trouvée.
+
+Les règles examinées (et dans cet ordre) sont :
+
+* Une case non définie et adjacente à une étoile ne peut pas être une étoile
+* Toutes les cases non définies dans une 'zone' (région, ligne ou colonne) qui possède déjà toutes ces étoiles
+  sont des cases qui ne peuvent pas contenir une étoile
+* S'il reste autant de cases non définies dans une 'zone' (région, ligne ou colonne) que d'étoiles manquantes
+  dans cette 'zone' alors ce sont forcément des étoiles
+* Toutes les combinaisons possibles pour positioner une étoile dans une région ont des cases toujours avec une
+  étoile ou jamais une étoile
+* Des case autour d'une région sont toujours adjacente à une étoile pour toutes les combinaisons possibles d'étoiles
+  dans cette région. Ces cases ne peuvent donc pas être des étoiles
+* Toutes les combinaisons possibles pour positionner une étoile dans une 'zone' (région, ligne ou colonne) ont des
+  cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, get_good_rule};

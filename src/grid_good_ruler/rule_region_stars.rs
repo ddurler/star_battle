@@ -3,6 +3,8 @@
 //! Recherche les combinaisons d'étoiles possibles dans une région.
 //! Plus simplement que `rule_region_star_complete`, on n'examine ici que le contenu des différentes
 //! combinaisons dans une région sans examiner l'impact sur l'ensemble de la grille grille.
+//! On intègre également dans cette recherche, toutes les cases environnant une région qui sont
+//! forcément pas des étoles puisque toujours à proximité d'une étoile dans la région.
 //! Les règles qui apparaissent ainsi sont plus compréhensible pour un humain.
 
 use crate::check_bad_rules;
@@ -15,6 +17,7 @@ use crate::GridSurfer;
 use crate::LineColumn;
 
 use super::invariant::Variant;
+use super::star_adjacent::StarAdjacent;
 
 /// Cherche toutes les combinaisons d'étoiles possibles dans les différentes régions.
 /// Version simplifiée de `rule_complete_star_number` qui se limite au contenu des différentes
@@ -41,7 +44,18 @@ fn try_star_complete(
     let surfer = handler.surfer(grid, grid_surfer);
     let mut collector = Collector::new(handler, grid, &surfer, nb_stars);
     collector.collect_possible_grids();
-    Variant::check_for_invariants(handler, grid, &collector.possible_grids)
+    // Liste des invariants dans la région pour toutes les grilles possibles
+    let mut invariants = Variant::check_for_invariants(handler, grid, &collector.possible_grids);
+    // Qu'on complète avec les cases autour des régions qui sont toujours adjacentes à une étoile dans la
+    // région pour toutes les grilles possibles (et qui ne sont pas déjà présentes dans les invariants)
+    let star_adjacents =
+        StarAdjacent::check_for_star_adjacents(handler, grid, &collector.possible_grids);
+    for action in star_adjacents {
+        if !invariants.contains(&action) {
+            invariants.push(action);
+        }
+    }
+    invariants
 }
 
 /// Structure pour la recherche des combinaisons possibles qui positionnent
@@ -177,14 +191,21 @@ mod tests {
     }
 
     #[test]
-    fn test_combinaisons_count() {
-        let (grid_handler, grid) = get_test_grid();
+    fn test_region_stars() {
+        let (grid_handler, mut grid) = get_test_grid();
 
         println!("Grille initiale :\n{}", grid_handler.display(&grid, true));
+
+        // Cette règle s'applique sur la région 'CC' dans la 3eme ligne : Les cases adjacentes ne peuvent
+        // pas être une étoile...
+        let option_good_rule = rule_region_stars(&grid_handler, &grid);
+        assert!(option_good_rule.is_some());
+        grid.apply_good_rule(&option_good_rule.unwrap());
 
         // Cette règle s'applique sur l'avant dernière ligne de 'DDDDD' : On doit mettre une étoile
         // sur cette ligne donc les D sur la ligne suivante ne peuvent pas être une étoile...
         let option_good_rule = rule_region_stars(&grid_handler, &grid);
         assert!(option_good_rule.is_some());
+        grid.apply_good_rule(&option_good_rule.unwrap());
     }
 }

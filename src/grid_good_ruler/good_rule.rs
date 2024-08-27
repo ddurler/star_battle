@@ -121,6 +121,7 @@ mod tests {
             ("./test_grids/test01.txt", 1),
             ("./test_grids/facile01_2.txt", 2),
             ("./test_grids/moyen01_2.txt", 2),
+            ("./test_grids/difficile01_2.txt", 2),
         ];
 
         for (grid_file_name, nb_stars) in grid_filenames_and_nb_stars {
