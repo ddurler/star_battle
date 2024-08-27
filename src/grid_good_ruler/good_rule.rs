@@ -88,7 +88,13 @@ impl Grid {
 /// Retourne un [`BadRuleError`] si la grille n'est pas valide
 #[allow(clippy::module_name_repetitions)]
 pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRule>, BadRuleError> {
+    // Grille viable ?
     check_bad_rules(handler, grid)?;
+
+    // Grille terminée ?
+    if handler.is_done(grid) {
+        return Ok(None);
+    }
 
     for f in [
         rule_no_star_adjacent_to_star,
@@ -122,6 +128,7 @@ mod tests {
             ("./test_grids/facile01_2.txt", 2),
             ("./test_grids/moyen01_2.txt", 2),
             ("./test_grids/difficile01_2.txt", 2),
+            ("./test_grids/expert01_2.txt", 2),
         ];
 
         for (grid_file_name, nb_stars) in grid_filenames_and_nb_stars {

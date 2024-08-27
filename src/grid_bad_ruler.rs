@@ -76,9 +76,9 @@ fn check_zone(handler: &GridHandler, grid: &Grid, surfer: &GridSurfer) -> Result
     }
 
     if nb_stars > handler.nb_stars() {
-        return Err(BadRuleError::TooManyStarsInZone(*surfer));
+        return Err(BadRuleError::TooManyStarsInZone(surfer.clone()));
     } else if nb_stars + nb_possible_stars < handler.nb_stars() {
-        return Err(BadRuleError::NotEnoughStarsInZone(*surfer));
+        return Err(BadRuleError::NotEnoughStarsInZone(surfer.clone()));
     }
 
     Ok(())

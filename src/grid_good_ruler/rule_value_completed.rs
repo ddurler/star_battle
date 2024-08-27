@@ -76,7 +76,7 @@ fn try_value_completed(
             for line_column in line_column_unknown {
                 actions.push(GridAction::SetNoStar(line_column));
             }
-            return Some(GoodRule::ZoneNoStarCompleted(*grid_surfer, actions));
+            return Some(GoodRule::ZoneNoStarCompleted(grid_surfer.clone(), actions));
         }
         if cur_nb_unknown == nb_stars - cur_nb_stars {
             // ... et il reste dans la zone autant de cases indéfinies qu'il reste d'étoiles à placer
@@ -85,7 +85,7 @@ fn try_value_completed(
             for line_column in line_column_unknown {
                 actions.push(GridAction::SetStar(line_column));
             }
-            return Some(GoodRule::ZoneStarCompleted(*grid_surfer, actions));
+            return Some(GoodRule::ZoneStarCompleted(grid_surfer.clone(), actions));
         }
     }
 

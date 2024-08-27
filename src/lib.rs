@@ -189,6 +189,8 @@ critères à travers la grille.
 * Toutes les cases adjacentes à une case donnée (y compris les diagonales)
 * Toutes les cases d'une ligne
 * Toutes les cases d'une colonne
+* Toutes les cases de plusieurs lignes consécutives
+* Toutes les cases de plusieurs colonnes consécutives
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, LineColumn, GridSurfer};

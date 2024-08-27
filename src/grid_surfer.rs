@@ -3,6 +3,7 @@
 //! Applicable sur un objet [`GridHandler`] associé à une grille définie par un [`Grid`].
 
 use std::fmt::Display;
+use std::ops::RangeInclusive;
 
 use crate::line_column::{display_column, display_line};
 use crate::CellValue;
@@ -13,7 +14,7 @@ use crate::LineColumn;
 use crate::Region;
 
 /// Navigation dans la grille
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum GridSurfer {
     /// Navigation sur toutes les case de la grille
     AllCells,
@@ -29,6 +30,12 @@ pub enum GridSurfer {
 
     /// Navigation sur toutes les cases d'une colonne
     Column(usize),
+
+    /// Navigation sur plusieurs lignes
+    Lines(RangeInclusive<usize>),
+
+    /// Navigation sur plusieurs colonnes
+    Columns(RangeInclusive<usize>),
 }
 
 impl Display for GridSurfer {
@@ -39,6 +46,18 @@ impl Display for GridSurfer {
             Self::Adjacent(line_column) => write!(f, "Cases adjacentes à '{line_column}'"),
             Self::Line(line) => write!(f, "Ligne {}", display_line(*line)),
             Self::Column(column) => write!(f, "Colonne {}", display_column(*column)),
+            Self::Lines(range) => write!(
+                f,
+                "Lignes {}-{}",
+                display_line(*range.start()),
+                display_line(*range.end())
+            ),
+            Self::Columns(range) => write!(
+                f,
+                "Colonnes {}-{}",
+                display_column(*range.start()),
+                display_column(*range.end())
+            ),
         }
     }
 }
@@ -69,6 +88,10 @@ impl GridHandler {
                     GridSurfer::Line(select_line) => *select_line == line,
                     // Toutes les cases d'une colonne
                     GridSurfer::Column(select_column) => *select_column == column,
+                    // Toutes les cases de plusieurs lignes
+                    GridSurfer::Lines(line_range) => line_range.contains(&line),
+                    // Toutes les cases de plusieurs colonnes
+                    GridSurfer::Columns(column_range) => column_range.contains(&column),
                 };
                 if cell_is_matching {
                     cells.push(line_column);
@@ -145,6 +168,7 @@ mod tests {
         let (grid_handler, grid) = get_test_grid();
         // 5 cases de la 2eme ligne
         let surfer = grid_handler.surfer(&grid, &GridSurfer::Line(1));
+        assert_eq!(surfer.len(), 5);
         assert_eq!(
             surfer
                 .iter()
@@ -159,12 +183,43 @@ mod tests {
         let (grid_handler, grid) = get_test_grid();
         // 5 cases de la 2eme colonne
         let surfer = grid_handler.surfer(&grid, &GridSurfer::Column(1));
+        assert_eq!(surfer.len(), 5);
         assert_eq!(
             surfer
                 .iter()
                 .filter(|line_column| line_column.column == 1)
                 .count(),
             5
+        );
+    }
+
+    #[test]
+    fn test_multi_lines() {
+        let (grid_handler, grid) = get_test_grid();
+        // 15 cases de la 2eme, 3eme et 4eme lignes
+        let surfer = grid_handler.surfer(&grid, &GridSurfer::Lines(1..=3));
+        assert_eq!(surfer.len(), 15);
+        assert_eq!(
+            surfer
+                .iter()
+                .filter(|line_column| (1..=3).contains(&line_column.line))
+                .count(),
+            15
+        );
+    }
+
+    #[test]
+    fn test_multi_columns() {
+        let (grid_handler, grid) = get_test_grid();
+        // 10 cases de la 4eme et dernière colonnes
+        let surfer = grid_handler.surfer(&grid, &GridSurfer::Columns(3..=4));
+        assert_eq!(surfer.len(), 10);
+        assert_eq!(
+            surfer
+                .iter()
+                .filter(|line_column| (3..=4).contains(&line_column.column))
+                .count(),
+            10
         );
     }
 

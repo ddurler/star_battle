@@ -54,6 +54,19 @@ fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> 
         for column in 0..handler.nb_columns() {
             add_zone(GridSurfer::Column(column), handler.nb_stars());
         }
+
+        // Double-lignes
+        for line in 0..handler.nb_lines() - 1 {
+            add_zone(GridSurfer::Lines(line..=line + 1), 2 * handler.nb_stars());
+        }
+
+        // Double-colonnes
+        for column in 0..handler.nb_columns() - 1 {
+            add_zone(
+                GridSurfer::Columns(column..=column + 1),
+                2 * handler.nb_stars(),
+            );
+        }
     }
 
     // Tri des différentes zones par ordre croissant de combinaisons possible
