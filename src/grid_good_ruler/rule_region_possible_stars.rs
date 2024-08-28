@@ -20,9 +20,9 @@ use super::invariant::Variant;
 use super::star_adjacent::StarAdjacent;
 
 /// Cherche toutes les combinaisons d'étoiles possibles dans les différentes régions.
-/// Version simplifiée de `rule_complete_star_number` qui se limite au contenu des différentes
-/// régions pour une compréhension plus aisées pour un humain
-pub fn rule_region_stars(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
+/// Version simplifiée de `rule_region_recursive_possible_stars` qui se limite au contenu des
+/// différentes régions pour une compréhension plus aisées pour un humain
+pub fn rule_region_possible_stars(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
     // Pour simplifier la règle présentée à un humain, on retient la région qui génère un minimum
     // de grilles pour placer toutes les étoiles
     #[derive(Debug, Default)]
@@ -99,6 +99,9 @@ fn try_star_complete(
 /// dans tous les i-eme cases si me i-eme bit est 1.
 /// Si la grille obtenue est 'viable', on la retient comme combinaison possible.
 /// On examine ensuite les grilles retenues à la recherche de cases invariantes.
+///
+/// Nota : Il existe une version `RecursiveCollector` dans `rule_zone_possible_stars_complete` qui recherche
+/// récursivement toutes les grilles possible.
 struct Collector<'a> {
     /// Handler de la grille à étudier
     handler: &'a GridHandler,
@@ -228,13 +231,13 @@ mod tests {
 
         // Cette règle s'applique sur la région 'CC' dans la 3eme ligne : Les cases adjacentes ne peuvent
         // pas être une étoile...
-        let option_good_rule = rule_region_stars(&grid_handler, &grid);
+        let option_good_rule = rule_region_possible_stars(&grid_handler, &grid);
         assert!(option_good_rule.is_some());
         grid.apply_good_rule(&option_good_rule.unwrap());
 
         // Cette règle s'applique sur l'avant dernière ligne de 'DDDDD' : On doit mettre une étoile
         // sur cette ligne donc les D sur la ligne suivante ne peuvent pas être une étoile...
-        let option_good_rule = rule_region_stars(&grid_handler, &grid);
+        let option_good_rule = rule_region_possible_stars(&grid_handler, &grid);
         assert!(option_good_rule.is_some());
         grid.apply_good_rule(&option_good_rule.unwrap());
     }

@@ -280,16 +280,24 @@ construction de la grille n'a été trouvée.
 Les règles examinées (et dans cet ordre) sont :
 
 * Une case non définie et adjacente à une étoile ne peut pas être une étoile
+
 * Toutes les cases non définies dans une 'zone' (région, ligne ou colonne) qui possède déjà toutes ces étoiles
   sont des cases qui ne peuvent pas contenir une étoile
+
 * S'il reste autant de cases non définies dans une 'zone' (région, ligne ou colonne) que d'étoiles manquantes
   dans cette 'zone' alors ce sont forcément des étoiles
+
 * Toutes les combinaisons possibles pour positioner une étoile dans une région ont des cases toujours avec une
   étoile ou jamais une étoile
+
 * Des case autour d'une région sont toujours adjacente à une étoile pour toutes les combinaisons possibles d'étoiles
   dans cette région. Ces cases ne peuvent donc pas être des étoiles
-* Toutes les combinaisons possibles pour positionner une étoile dans une 'zone' (région, ligne ou colonne) ont des
+
+* Toutes les combinaisons possibles pour positionner une étoile dans une ligne ou colonne ont des
   cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
+
+* Toutes les combinaisons possibles pour positionner une étoile dans plusieurs ligne ou colonnes consécutives (2)
+  ont des cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, get_good_rule};

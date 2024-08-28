@@ -13,23 +13,52 @@ use crate::LineColumn;
 
 use super::invariant::Variant;
 
+/// Énumération des différentes zones examinées
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ZoneToExamine {
+    Region,
+    LineAndColumn,
+    MultipleLinesAndColumns(usize),
+}
+
 /// Cherche toutes les combinaisons possibles dans les différentes régions.
-/// Version simplifiée de `rule_complete_star_number` qui se limite au contenu des différentes
+/// Version simplifiée de `rule_zone_recursive_possible_stars` qui se limite au contenu des différentes
 /// régions pour une compréhension plus aisées pour un humain
-pub fn rule_region_star_complete(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    rule_star_complete(handler, grid, true)
+pub fn rule_region_recursive_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+) -> Option<GoodRule> {
+    rule_possible_stars(handler, grid, ZoneToExamine::Region)
 }
 
 /// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
-/// dans différentes zones (région, ligne, colonne, ...).
+/// dans les différentes ligne ou colonne.
 /// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
 /// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
-pub fn rule_zone_star_complete(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
-    rule_star_complete(handler, grid, false)
+pub fn rule_line_column_recursive_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+) -> Option<GoodRule> {
+    rule_possible_stars(handler, grid, ZoneToExamine::LineAndColumn)
+}
+
+/// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
+/// dans différentes groupes de lignes consécutives ou groupes de colonnes consécutive.
+/// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
+/// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
+pub fn rule_multi_lines_columns_recursive_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+) -> Option<GoodRule> {
+    rule_possible_stars(handler, grid, ZoneToExamine::MultipleLinesAndColumns(2))
 }
 
 /// Méthode générique qui cherche toutes les combinaisons possibles dans les différentes zones ou régions
-fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> Option<GoodRule> {
+fn rule_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+    zone_to_examine: ZoneToExamine,
+) -> Option<GoodRule> {
     // zones: [(GridSurfer, nb_stars, combinaisons_count)]
     let mut zones = Vec::new();
 
@@ -39,33 +68,41 @@ fn rule_star_complete(handler: &GridHandler, grid: &Grid, region_only: bool) -> 
         zones.push((grid_surfer, nb_stars, nb_combinaisons));
     };
 
-    // Parcours de toutes les régions
-    for region in handler.regions() {
-        add_zone(GridSurfer::Region(region), handler.nb_stars());
-    }
-
-    if !region_only {
-        // Parcours de toutes les lignes
-        for line in 0..handler.nb_lines() {
-            add_zone(GridSurfer::Line(line), handler.nb_stars());
+    match zone_to_examine {
+        ZoneToExamine::Region => {
+            // Parcours de toutes les régions
+            for region in handler.regions() {
+                add_zone(GridSurfer::Region(region), handler.nb_stars());
+            }
         }
-
-        // Parcours de toutes les colonnes
-        for column in 0..handler.nb_columns() {
-            add_zone(GridSurfer::Column(column), handler.nb_stars());
+        ZoneToExamine::LineAndColumn => {
+            // Parcours de toutes les lignes
+            for line in 0..handler.nb_lines() {
+                add_zone(GridSurfer::Line(line), handler.nb_stars());
+            }
+            // Parcours de toutes les colonnes
+            for column in 0..handler.nb_columns() {
+                add_zone(GridSurfer::Column(column), handler.nb_stars());
+            }
         }
+        ZoneToExamine::MultipleLinesAndColumns(2) => {
+            // Double-lignes
+            for line in 0..handler.nb_lines() - 1 {
+                add_zone(GridSurfer::Lines(line..=line + 1), 2 * handler.nb_stars());
+            }
 
-        // Double-lignes
-        for line in 0..handler.nb_lines() - 1 {
-            add_zone(GridSurfer::Lines(line..=line + 1), 2 * handler.nb_stars());
+            // Double-colonnes
+            for column in 0..handler.nb_columns() - 1 {
+                add_zone(
+                    GridSurfer::Columns(column..=column + 1),
+                    2 * handler.nb_stars(),
+                );
+            }
         }
-
-        // Double-colonnes
-        for column in 0..handler.nb_columns() - 1 {
-            add_zone(
-                GridSurfer::Columns(column..=column + 1),
-                2 * handler.nb_stars(),
-            );
+        ZoneToExamine::MultipleLinesAndColumns(_) => {
+            todo!(
+                "rule_multi_lines_columns_recursive_possible_stars pour plus de 2 lignes/colonnes"
+            )
         }
     }
 
@@ -120,9 +157,9 @@ fn try_star_complete(
     nb_stars: usize,
 ) -> Vec<GridAction> {
     let surfer = handler.surfer(grid, grid_surfer);
-    let mut collector = Collector::new(handler, grid, &surfer, nb_stars);
-    collector.collect_possible_grids();
-    Variant::check_for_invariants(handler, grid, &collector.possible_grids)
+    let mut recursive_collector = RecursiveCollector::new(handler, grid, &surfer, nb_stars);
+    recursive_collector.collect_possible_grids();
+    Variant::check_for_invariants(handler, grid, &recursive_collector.possible_grids)
 }
 
 /// Structure pour la recherche des combinaisons possibles qui positionnent
@@ -136,14 +173,16 @@ fn try_star_complete(
 ///   avec cette combinaison. Cette recherche se fait en appelant à nouveau le même algorithme de recherche
 /// - En final, toutes les grilles possibles collectées 'récursivement' sont des grilles possibles pour la zone
 ///
-/// Pour cela, cette structure `Collector` s'utilise comme suit :
+/// Pour cela, cette structure `RecursiveCollector` s'utilise comme suit :
 ///
 /// - On détermine une zone à examiner pour cette règle
-/// - On construit un 'collector' pour cette zone `Collector::new(handler, grid, zone, nb_stars)`
+/// - On construit un `recursive_collector` pour cette zone `RecursiveCollector::new(handler, grid, zone, nb_stars)`
 /// - On appelle la méthode `collect_possible_grids` pour chercher toutes les grilles possibles pour cette zone
-/// - On appelle la méthode `check_for_invariants` pour déterminer si des cases sont invariantes pour toutes
 ///   les combinaisons de grilles possibles
-struct Collector<'a> {
+///
+/// Nota : Il existe une version simple `Collecteur` dans `rule_region_possible_stars` qui n'implémente pas
+/// la recherche 'récursif' mais se limite à la recherche des grilles possibles pour la zone
+struct RecursiveCollector<'a> {
     /// Handler de la grille à étudier
     handler: &'a GridHandler,
 
@@ -160,7 +199,7 @@ struct Collector<'a> {
     possible_grids: Vec<Grid>,
 }
 
-impl<'a> Collector<'a> {
+impl<'a> RecursiveCollector<'a> {
     /// Constructeur d'une zone à examiner
     pub const fn new(
         handler: &'a GridHandler,
@@ -211,22 +250,24 @@ impl<'a> Collector<'a> {
             // Si cette nouvelle grille est viable...
             if check_bad_rules(self.handler, &new_grid).is_ok() {
                 // ...on recherche les grilles possibles pour cette nouvelle grille
-                let mut new_collector =
-                    Collector::new(self.handler, &new_grid, self.zone, self.nb_stars);
-                new_collector.collect_possible_grids();
-                // Toutes les grilles trouvées par ce nouveau collector sont des grilles possibles pour la grille courante
-                self.possible_grids.extend(new_collector.possible_grids);
+                let mut new_recursive_collector =
+                    RecursiveCollector::new(self.handler, &new_grid, self.zone, self.nb_stars);
+                new_recursive_collector.collect_possible_grids();
+                // Toutes les grilles trouvées par ce nouveau recursive_collector sont des grilles possibles pour la grille courante
+                self.possible_grids
+                    .extend(new_recursive_collector.possible_grids);
             }
 
             //  Puis on construit une autre grille possible pour la zone sans une étoile dans cette case
             let mut new_grid = self.grid.clone();
             new_grid.cell_mut(line_column).value = CellValue::NoStar;
             // On recherche les grilles possibles pour cette nouvelle grille
-            let mut new_collector =
-                Collector::new(self.handler, &new_grid, self.zone, self.nb_stars);
-            new_collector.collect_possible_grids();
-            // Toutes les grilles trouvées par ce nouveau collector sont des grilles possibles pour la grille courante
-            self.possible_grids.extend(new_collector.possible_grids);
+            let mut new_recursive_collector =
+                RecursiveCollector::new(self.handler, &new_grid, self.zone, self.nb_stars);
+            new_recursive_collector.collect_possible_grids();
+            // Toutes les grilles trouvées par ce nouveau recursive_collector sont des grilles possibles pour la grille courante
+            self.possible_grids
+                .extend(new_recursive_collector.possible_grids);
         }
 
         // On retourne les grilles trouvées jusqu'ici
@@ -318,7 +359,7 @@ mod tests {
         println!("Grille initiale :\n{}", grid_handler.display(&grid, true));
 
         loop {
-            let option_good_rule = rule_zone_star_complete(&grid_handler, &grid);
+            let option_good_rule = rule_line_column_recursive_possible_stars(&grid_handler, &grid);
             if option_good_rule.is_some() {
                 let good_rule = option_good_rule.unwrap();
                 println!("{good_rule}");

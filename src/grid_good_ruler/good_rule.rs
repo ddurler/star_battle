@@ -14,9 +14,12 @@ use crate::GridSurfer;
 use crate::LineColumn;
 
 use super::rule_no_star_adjacent_to_star::rule_no_star_adjacent_to_star;
-use super::rule_region_stars::rule_region_stars;
-use super::rule_star_complete::{rule_region_star_complete, rule_zone_star_complete};
+use super::rule_region_possible_stars::rule_region_possible_stars;
 use super::rule_value_completed::rule_value_completed;
+use super::rule_zone_possible_stars::{
+    rule_line_column_recursive_possible_stars, rule_multi_lines_columns_recursive_possible_stars,
+    rule_region_recursive_possible_stars,
+};
 
 /// Énumération des règles applicables à la construction/résolution d'une grille
 #[derive(Clone, Debug)]
@@ -99,9 +102,10 @@ pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRu
     for f in [
         rule_no_star_adjacent_to_star,
         rule_value_completed,
-        rule_region_stars,
-        rule_region_star_complete,
-        rule_zone_star_complete,
+        rule_region_possible_stars,
+        rule_region_recursive_possible_stars,
+        rule_line_column_recursive_possible_stars,
+        rule_multi_lines_columns_recursive_possible_stars,
     ] {
         if let Some(rule) = f(handler, grid) {
             return Ok(Some(rule));
