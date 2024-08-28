@@ -121,7 +121,7 @@ mod tests {
     use crate::GridParser;
 
     #[test]
-    fn test_grids() {
+    fn test_all_test_grids() {
         // Liste des grilles d'exemple
         let grid_filenames_and_nb_stars = vec![
             ("./test_grids/test01.txt", 1),

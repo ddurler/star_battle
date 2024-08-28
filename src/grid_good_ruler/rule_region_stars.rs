@@ -23,24 +23,54 @@ use super::star_adjacent::StarAdjacent;
 /// Version simplifiée de `rule_complete_star_number` qui se limite au contenu des différentes
 /// régions pour une compréhension plus aisées pour un humain
 pub fn rule_region_stars(handler: &GridHandler, grid: &Grid) -> Option<GoodRule> {
+    // Pour simplifier la règle présentée à un humain, on retient la région qui génère un minimum
+    // de grilles pour placer toutes les étoiles
+    #[derive(Debug, Default)]
+    struct BestCollector {
+        grid_surfer: Option<GridSurfer>,
+        nb_possible_grids: usize,
+        invariant_actions: Vec<GridAction>,
+    }
+    let mut best_collector = BestCollector::default();
     // Examine toutes les différentes régions
     for region in handler.regions() {
-        let zone = GridSurfer::Region(region);
-        let invariant_actions = try_star_complete(handler, grid, &zone, handler.nb_stars());
-        if !invariant_actions.is_empty() {
-            return Some(GoodRule::InvariantWithZone(zone, invariant_actions));
+        let grid_surfer = GridSurfer::Region(region);
+        let (invariant_actions, nb_possible_grids) =
+            try_star_complete(handler, grid, &grid_surfer, handler.nb_stars());
+        if !invariant_actions.is_empty()
+        // La règle s'applique pour cette région...
+            && (best_collector.grid_surfer.is_none()
+            // ... et c'est la première région qui permet d'appliquer la règle...
+                || nb_possible_grids < best_collector.nb_possible_grids)
+        // ... ou le nombre de grilles possibles est moindre que ce qu'on a déjà vu
+        {
+            best_collector = BestCollector {
+                grid_surfer: Some(grid_surfer),
+                nb_possible_grids,
+                invariant_actions,
+            };
         }
     }
-    None
+    // Règle trouvée ?
+    if best_collector.grid_surfer.is_some() {
+        Some(GoodRule::InvariantWithZone(
+            best_collector.grid_surfer.unwrap(),
+            best_collector.invariant_actions,
+        ))
+    } else {
+        None
+    }
 }
 
-/// Vérifie si la règle est applicable sur la région définie
+/// Vérifie si la règle est applicable sur la région définie.<br>
+/// Si applicable, retourne la liste des actions déduites par la règle et le nombre de grilles possibles
+/// qui ont été examinées pour ces actions
 fn try_star_complete(
     handler: &GridHandler,
     grid: &Grid,
     grid_surfer: &GridSurfer,
     nb_stars: usize,
-) -> Vec<GridAction> {
+) -> (Vec<GridAction>, usize) {
     let surfer = handler.surfer(grid, grid_surfer);
     let mut collector = Collector::new(handler, grid, &surfer, nb_stars);
     collector.collect_possible_grids();
@@ -55,7 +85,7 @@ fn try_star_complete(
             invariants.push(action);
         }
     }
-    invariants
+    (invariants, collector.possible_grids.len())
 }
 
 /// Structure pour la recherche des combinaisons possibles qui positionnent
