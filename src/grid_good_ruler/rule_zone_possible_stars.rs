@@ -2,15 +2,14 @@
 //!
 //! Recherche les cases invariantes pour toutes les combinaisons possibles d'une zone
 
-use crate::check_bad_rules;
 use crate::CellValue;
 use crate::GoodRule;
 use crate::Grid;
 use crate::GridAction;
 use crate::GridHandler;
 use crate::GridSurfer;
-use crate::LineColumn;
 
+use super::collector::Collector;
 use super::invariant::Variant;
 
 /// Énumération des différentes zones examinées
@@ -157,157 +156,9 @@ fn try_star_complete(
     nb_stars: usize,
 ) -> Vec<GridAction> {
     let surfer = handler.surfer(grid, grid_surfer);
-    let mut recursive_collector = RecursiveCollector::new(handler, grid, &surfer, nb_stars);
-    recursive_collector.collect_possible_grids();
-    Variant::check_for_invariants(handler, grid, &recursive_collector.possible_grids)
-}
-
-/// Structure pour la recherche des combinaisons possibles qui positionnent
-/// le nombre attendu d'étoiles dans une zone.<br>
-///
-/// L'algorithme de recherche 'récursif' avec un cheminement comme suit :
-/// - On repère la première case possible de la zone qui peut contenir une étoile
-/// - On pose une étoile dans cette case et on recherche les grilles possibles avec cette combinaison.
-///   Cette recherche se fait en appelant à nouveau le même algorithme de recherche
-/// - Puis, on définit qu'il n'y a pas d'étoile dans cette case et on recherche à nouveau les grilles possibles
-///   avec cette combinaison. Cette recherche se fait en appelant à nouveau le même algorithme de recherche
-/// - En final, toutes les grilles possibles collectées 'récursivement' sont des grilles possibles pour la zone
-///
-/// Pour cela, cette structure `RecursiveCollector` s'utilise comme suit :
-///
-/// - On détermine une zone à examiner pour cette règle
-/// - On construit un `recursive_collector` pour cette zone `RecursiveCollector::new(handler, grid, zone, nb_stars)`
-/// - On appelle la méthode `collect_possible_grids` pour chercher toutes les grilles possibles pour cette zone
-///   les combinaisons de grilles possibles
-///
-/// Nota : Il existe une version simple `Collecteur` dans `rule_region_possible_stars` qui n'implémente pas
-/// la recherche 'récursif' mais se limite à la recherche des grilles possibles pour la zone
-struct RecursiveCollector<'a> {
-    /// Handler de la grille à étudier
-    handler: &'a GridHandler,
-
-    /// Contenu de la grille à étudier
-    grid: &'a Grid,
-
-    /// Liste des cases de la zone à étudier
-    zone: &'a Vec<LineColumn>,
-
-    /// Nombre d'étoiles à placer dans la zone
-    nb_stars: usize,
-
-    /// Liste des combinaisons de grilles possibles pour placer le nombre d'étoiles demandés dans la zone
-    possible_grids: Vec<Grid>,
-}
-
-impl<'a> RecursiveCollector<'a> {
-    /// Constructeur d'une zone à examiner
-    pub const fn new(
-        handler: &'a GridHandler,
-        grid: &'a Grid,
-        zone: &'a Vec<LineColumn>,
-        nb_stars: usize,
-    ) -> Self {
-        Self {
-            handler,
-            grid,
-            zone,
-            nb_stars,
-            possible_grids: Vec::new(),
-        }
-    }
-
-    /// Cherche les combinaisons possibles qui positionnent le nombre attendu d'étoiles dans la zone
-    pub fn collect_possible_grids(&mut self) {
-        // Décompte du nombre d'étoiles qui restent à placer dans la zone
-        let nb_current_stars = self
-            .zone
-            .iter()
-            .filter(|line_column| self.grid.cell(**line_column).value == CellValue::Star)
-            .count();
-
-        if nb_current_stars == self.nb_stars {
-            // Toutes les étoiles sont placées dans la zone
-            // La grille courante est la seule possibilité dans ce cas...
-            // On complète les cases non définies de cette zone par des cases sans étoile
-            let mut new_grid = self.grid.clone();
-            for line_column in self.zone {
-                if new_grid.cell(*line_column).value == CellValue::Unknown {
-                    new_grid.cell_mut(*line_column).value = CellValue::NoStar;
-                }
-            }
-            self.possible_grids.push(new_grid);
-            // ...qu'on retourne
-            return;
-        }
-
-        // Au moins une étoile est à placer. On cherche la première case possible dans la zone pour cela
-        if let Some(line_column) = self.first_possible_line_column_for_a_star() {
-            // On construit alors une nouvelle grille possible
-            // Et on pose une étoile dans cette case dans une nouvelle grille possible
-            // et on invalide la possibilité d'une étoile pour toutes les cases adjacentes
-            let mut new_grid = self.grid.clone();
-            self.set_star(&mut new_grid, line_column);
-            // Si cette nouvelle grille est viable...
-            if check_bad_rules(self.handler, &new_grid).is_ok() {
-                // ...on recherche les grilles possibles pour cette nouvelle grille
-                let mut new_recursive_collector =
-                    RecursiveCollector::new(self.handler, &new_grid, self.zone, self.nb_stars);
-                new_recursive_collector.collect_possible_grids();
-                // Toutes les grilles trouvées par ce nouveau recursive_collector sont des grilles possibles pour la grille courante
-                self.possible_grids
-                    .extend(new_recursive_collector.possible_grids);
-            }
-
-            //  Puis on construit une autre grille possible pour la zone sans une étoile dans cette case
-            let mut new_grid = self.grid.clone();
-            new_grid.cell_mut(line_column).value = CellValue::NoStar;
-            // On recherche les grilles possibles pour cette nouvelle grille
-            let mut new_recursive_collector =
-                RecursiveCollector::new(self.handler, &new_grid, self.zone, self.nb_stars);
-            new_recursive_collector.collect_possible_grids();
-            // Toutes les grilles trouvées par ce nouveau recursive_collector sont des grilles possibles pour la grille courante
-            self.possible_grids
-                .extend(new_recursive_collector.possible_grids);
-        }
-
-        // On retourne les grilles trouvées jusqu'ici
-    }
-
-    /// Recherche la première case possible pour poser une étoile dans la zone
-    fn first_possible_line_column_for_a_star(&self) -> Option<LineColumn> {
-        for line_column in self.zone {
-            // Case possible pour poser une étoile ?
-            if self.grid.cell(*line_column).is_unknown() {
-                // Il ne faut pas d'étoiles dans les cases adjacentes à cette case
-                if self
-                    .handler
-                    .adjacent_cells(*line_column)
-                    .iter()
-                    .filter(|line_column| self.grid.cell(**line_column).value == CellValue::Star)
-                    .count()
-                    == 0
-                {
-                    return Some(*line_column);
-                }
-            }
-        }
-        None
-    }
-
-    /// Pose une étoile sur une grille possible et indique que toutes les cases autour de cette étoile
-    /// ne peuvent pas être une étoile
-    fn set_star(&self, new_grid: &mut Grid, line_column: LineColumn) {
-        // Pose une étoile dans cette case dans une nouvelle grille possible
-        new_grid.cell_mut(line_column).value = CellValue::Star;
-        // On indique que toutes les cases autour de cette étoile ne peuvent pas être une étoile
-        for adjacent_line_column in self.handler.adjacent_cells(line_column) {
-            match self.grid.cell(adjacent_line_column).value {
-                CellValue::Star => panic!("Bug dans l'algo !!! La case {adjacent_line_column} ne devrait pas être une étoile"),
-                CellValue::NoStar => (),
-                CellValue::Unknown => new_grid.cell_mut(adjacent_line_column).value = CellValue::NoStar,
-            }
-        }
-    }
+    let mut collector = Collector::new(handler, grid, &surfer, nb_stars);
+    collector.collect_recursive_possible_grids();
+    Variant::check_for_invariants(handler, grid, &collector.possible_grids)
 }
 
 #[cfg(test)]
@@ -315,6 +166,7 @@ mod tests {
     use super::*;
 
     use crate::GridParser;
+    use crate::LineColumn;
 
     // Construction d'un objet GridHandler et d'un Grid à partir d'une grille de test
     fn get_test_grid() -> (GridHandler, Grid) {

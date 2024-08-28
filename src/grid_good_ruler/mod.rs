@@ -1,5 +1,6 @@
 //! Gestion des règles de construction/résolution d'une grille
 
+mod collector;
 mod good_rule;
 mod invariant;
 mod rule_no_star_adjacent_to_star;
