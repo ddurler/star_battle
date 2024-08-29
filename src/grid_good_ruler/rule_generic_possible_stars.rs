@@ -77,9 +77,37 @@ pub fn rule_generic_possible_stars(
                 );
             }
         }
+        ZoneToExamine::MultipleLinesAndColumns(3) => {
+            // Double-lignes
+            for line in 0..handler.nb_lines() - 2 {
+                add_zone(GridSurfer::Lines(line..=line + 2), 3 * handler.nb_stars());
+            }
+
+            // Double-colonnes
+            for column in 0..handler.nb_columns() - 2 {
+                add_zone(
+                    GridSurfer::Columns(column..=column + 2),
+                    3 * handler.nb_stars(),
+                );
+            }
+        }
+        ZoneToExamine::MultipleLinesAndColumns(4) => {
+            // Double-lignes
+            for line in 0..handler.nb_lines() - 3 {
+                add_zone(GridSurfer::Lines(line..=line + 3), 4 * handler.nb_stars());
+            }
+
+            // Double-colonnes
+            for column in 0..handler.nb_columns() - 3 {
+                add_zone(
+                    GridSurfer::Columns(column..=column + 3),
+                    4 * handler.nb_stars(),
+                );
+            }
+        }
         ZoneToExamine::MultipleLinesAndColumns(_) => {
             todo!(
-                "rule_multi_lines_columns_recursive_possible_stars pour plus de 2 lignes/colonnes"
+                "rule_multi_lines_columns_recursive_possible_stars pour plus de 4 lignes/colonnes"
             )
         }
     }

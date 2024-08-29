@@ -10,8 +10,6 @@ use super::rule_generic_possible_stars;
 use super::ZoneToExamine;
 
 /// Cherche toutes les combinaisons possibles dans les différentes régions.
-/// Version simplifiée de `rule_zone_recursive_possible_stars` qui se limite au contenu des différentes
-/// régions pour une compréhension plus aisées pour un humain
 pub fn rule_region_recursive_possible_stars(
     handler: &GridHandler,
     grid: &Grid,
@@ -19,10 +17,7 @@ pub fn rule_region_recursive_possible_stars(
     rule_generic_possible_stars(handler, grid, ZoneToExamine::Region, true)
 }
 
-/// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
-/// dans les différentes ligne ou colonne.
-/// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
-/// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
+/// Cherche toutes les combinaisons possibles dans les différentes ligne ou colonne.
 pub fn rule_line_column_recursive_possible_stars(
     handler: &GridHandler,
     grid: &Grid,
@@ -30,11 +25,8 @@ pub fn rule_line_column_recursive_possible_stars(
     rule_generic_possible_stars(handler, grid, ZoneToExamine::LineAndColumn, true)
 }
 
-/// Cherche toutes les combinaisons possibles qui positionnent le nombre attendu d'étoiles
-/// dans différentes groupes de lignes consécutives ou groupes de colonnes consécutive.
-/// Pour chaque zone, examine ensuite l'ensemble des grilles après avoir placer toutes les étoiles pour
-/// déterminer si le contenu d'une case est commun à toutes ces combinaisons possibles.
-pub fn rule_multi_lines_columns_recursive_possible_stars(
+/// Cherche toutes les combinaisons possibles dans les groupes de 2 lignes ou 2 colonnes
+pub fn rule_multi_2_lines_columns_recursive_possible_stars(
     handler: &GridHandler,
     grid: &Grid,
 ) -> Option<GoodRule> {
@@ -42,6 +34,32 @@ pub fn rule_multi_lines_columns_recursive_possible_stars(
         handler,
         grid,
         ZoneToExamine::MultipleLinesAndColumns(2),
+        true,
+    )
+}
+
+/// Cherche toutes les combinaisons possibles dans les groupes de 3 lignes ou 3 colonnes
+pub fn rule_multi_3_lines_columns_recursive_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+) -> Option<GoodRule> {
+    rule_generic_possible_stars(
+        handler,
+        grid,
+        ZoneToExamine::MultipleLinesAndColumns(3),
+        true,
+    )
+}
+
+/// Cherche toutes les combinaisons possibles dans les groupes de 4 lignes ou 3 colonnes
+pub fn rule_multi_4_lines_columns_recursive_possible_stars(
+    handler: &GridHandler,
+    grid: &Grid,
+) -> Option<GoodRule> {
+    rule_generic_possible_stars(
+        handler,
+        grid,
+        ZoneToExamine::MultipleLinesAndColumns(4),
         true,
     )
 }
