@@ -1,6 +1,8 @@
 //! Règle de construction/résolution d'une grille.
 //!
-//! Recherche les cases adjacentes à une étoile qui ne peuvent pas contenir une étoile.
+//! Recherche les cases implicites compte-tenu des autres cases dans une zone :
+//! * Une étoile si une seule possibilité pour la zone
+//! * Pas d'étoile si toutes les étoiles sont déjà placées dans la zone
 
 use crate::CellValue;
 use crate::GoodRule;

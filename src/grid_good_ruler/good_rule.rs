@@ -1,6 +1,6 @@
 //! Règles de construction/résolution d'une grille.
 //!
-//! Ce module expose les règles permettant d'avancer dans la résolution d'une grille.
+//! Ce module expose les différentes règles permettant d'avancer dans la résolution d'une grille.
 
 use std::fmt::Display;
 

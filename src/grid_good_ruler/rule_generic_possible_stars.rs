@@ -1,6 +1,7 @@
 //! Règle de construction/résolution d'une grille.
 //!
-//! Recherche les cases invariantes pour toutes les combinaisons possibles d'une zone
+//! Recherche générique des cases invariantes pour toutes les combinaisons possibles d'une zone.
+//!
 
 use crate::CellValue;
 use crate::GoodRule;
