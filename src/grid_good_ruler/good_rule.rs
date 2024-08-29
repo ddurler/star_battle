@@ -12,8 +12,13 @@ use crate::GridAction;
 use crate::GridHandler;
 use crate::GridSurfer;
 use crate::LineColumn;
+use crate::Region;
 
 use super::rule_no_star_adjacent_to_star::rule_no_star_adjacent_to_star;
+use super::rule_region_combinations::{
+    rule_region_1_combinations, rule_region_2_combinations, rule_region_3_combinations,
+    rule_region_4_combinations,
+};
 use super::rule_region_possible_stars::rule_region_possible_stars;
 use super::rule_value_completed::rule_value_completed;
 use super::rule_zone_possible_stars::{
@@ -30,6 +35,10 @@ pub enum GoodRule {
 
     /// Indique les cases restantes dans une zone ne peuvent pas être des étoiles
     ZoneNoStarCompleted(GridSurfer, Vec<GridAction>),
+
+    /// Indique que les cases restantes en dehors d'une combinaison de régions/lignes ou colonnes
+    /// ne peuvent pas contenir des étoiles
+    ZoneCombinations(Vec<Region>, GridSurfer, Vec<GridAction>),
 
     /// Indique les cases restantes dans une zone sont forcement des étoiles
     ZoneStarCompleted(GridSurfer, Vec<GridAction>),
@@ -49,6 +58,20 @@ impl Display for GoodRule {
                 write!(
                     f,
                     "Les cases restantes pour {grid_surfer} ne peuvent pas contenir une étoile : {}",
+                    display_vec_actions(actions)
+                )
+            }
+            Self::ZoneCombinations(regions, grid_surfer, actions) => {
+                let mut str_regions = String::new();
+                for region in regions {
+                    if !str_regions.is_empty() {
+                        str_regions.push_str(", ");
+                    }
+                    str_regions.push(*region);
+                }
+                write!(
+                    f,
+                    "Les cases restantes sur {grid_surfer} qui ne sont pas dans les régions {str_regions} ne peuvent être une étoile : {}",
                     display_vec_actions(actions)
                 )
             }
@@ -76,6 +99,7 @@ impl Grid {
         match rule {
             GoodRule::NoStarAdjacentToStar(_, actions)
             | GoodRule::ZoneNoStarCompleted(_, actions)
+            | GoodRule::ZoneCombinations(_, _, actions)
             | GoodRule::ZoneStarCompleted(_, actions)
             | GoodRule::InvariantWithZone(_, actions) => {
                 for action in actions {
@@ -103,9 +127,13 @@ pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRu
     for f in [
         rule_no_star_adjacent_to_star,
         rule_value_completed,
+        rule_region_1_combinations,
         rule_region_possible_stars,
+        rule_region_2_combinations,
         rule_region_recursive_possible_stars,
+        rule_region_3_combinations,
         rule_line_column_recursive_possible_stars,
+        rule_region_4_combinations,
         rule_multi_2_lines_columns_recursive_possible_stars,
         rule_multi_3_lines_columns_recursive_possible_stars,
         rule_multi_4_lines_columns_recursive_possible_stars,
@@ -136,6 +164,10 @@ mod tests {
             ("./test_grids/moyen01_2.txt", 2),
             ("./test_grids/difficile01_2.txt", 2),
             ("./test_grids/expert01_2.txt", 2),
+            ("./test_grids/facile02_2.txt", 2),
+            ("./test_grids/moyen02_2.txt", 2),
+            ("./test_grids/difficile02_2.txt", 2),
+            ("./test_grids/expert02_2.txt", 2),
         ];
 
         for (grid_file_name, nb_stars) in grid_filenames_and_nb_stars {

@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "combination"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b716816c51b753f4808fe5ae61d2886fe5a815140ad34490b16f004c8a492f7"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -24,6 +30,7 @@ dependencies = [
 name = "star_battle"
 version = "0.1.0"
 dependencies = [
+ "combination",
  "thiserror",
 ]
 

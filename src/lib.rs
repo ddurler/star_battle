@@ -277,7 +277,7 @@ Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valid
 Sinon un `Option<GoodRule>` est retourné. None signifie alors qu'aucune règle permettant d'avancer dans la
 construction de la grille n'a été trouvée.
 
-Les règles examinées (et dans cet ordre) sont :
+Les règles examinées sont :
 
 * Une case non définie et adjacente à une étoile ne peut pas être une étoile
 
@@ -293,11 +293,16 @@ Les règles examinées (et dans cet ordre) sont :
 * Des case autour d'une région sont toujours adjacente à une étoile pour toutes les combinaisons possibles d'étoiles
   dans cette région. Ces cases ne peuvent donc pas être des étoiles
 
+* Toutes les combinaisons de 1, 2, 3 ou 4 régions qui occupent respectivement uniquement 1, 2, 3 ou 4 lignes ou
+  colonnes sont examinées. S'il restent des cases n'appartenant pas à ces combinaisons dans ces lignes ou colonnes,
+  elles ne peuvent pas contenir une étoile
+
 * Toutes les combinaisons possibles pour positionner une étoile dans une ligne ou colonne ont des
   cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
 
-* Toutes les combinaisons possibles pour positionner une étoile dans plusieurs ligne ou colonnes consécutives (2)
-  ont des cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
+* Toutes les combinaisons possibles pour positionner une étoile dans plusieurs ligne ou colonnes consécutives
+  (2, 3 ou 4) nt des cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles
+  pour ces combinaisons
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, get_good_rule};
