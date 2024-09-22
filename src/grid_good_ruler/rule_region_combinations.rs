@@ -7,6 +7,8 @@
 //! En effect, les 'n' régions sur 'n' lignes positionnent toutes les étoiles sur ces 'n' lignes
 //! et il ne peut donc pas y avoir d'autres étoiles sur ce 'n' lignes.<br>
 //! Idem pour les colonnes.
+//!
+//! //! Cette règle est l'opposée de la règle [`rule_region_exclusions`]
 
 /// Crate qui recherche n combinaisons possibles dans un vecteur d'elements
 use combination::combine;
@@ -51,7 +53,7 @@ fn rule_region_generic_combinations(
     n: usize,
 ) -> Option<GoodRule> {
     // On utilise le crate 'combination' pour trouver toutes les combinaisons possibles
-    for vec_region in combine::from_vec_at(&handler.regions(), n) {
+    for vec_regions in combine::from_vec_at(&handler.regions(), n) {
         // On cherche les cases qui sont dans la combinaison et on détermine les lignes/colonnes minimales/maximales
         let all_cells = handler.surfer(grid, &GridSurfer::AllCells);
         let mut min_line = usize::MAX;
@@ -60,7 +62,7 @@ fn rule_region_generic_combinations(
         let mut max_column = 0;
         for line_column in all_cells {
             let cell = grid.cell(line_column);
-            if vec_region.contains(&cell.region) {
+            if vec_regions.contains(&cell.region) {
                 // Cette case de la grille est dans une des régions de la combinaison
                 let (line, column) = (cell.line_column.line, cell.line_column.column);
                 if line < min_line {
@@ -86,7 +88,7 @@ fn rule_region_generic_combinations(
             let candidates: Vec<LineColumn> = surfer
                 .iter()
                 .filter(|line_column| grid.cell(**line_column).is_unknown())
-                .filter(|line_column| !vec_region.contains(&grid.cell(**line_column).region))
+                .filter(|line_column| !vec_regions.contains(&grid.cell(**line_column).region))
                 .copied()
                 .collect();
 
@@ -96,7 +98,11 @@ fn rule_region_generic_combinations(
                     actions.push(GridAction::SetNoStar(line_column));
                 }
 
-                return Some(GoodRule::ZoneCombinations(vec_region, grid_surfer, actions));
+                return Some(GoodRule::ZoneCombinations(
+                    vec_regions,
+                    grid_surfer,
+                    actions,
+                ));
             }
         }
 
@@ -108,7 +114,7 @@ fn rule_region_generic_combinations(
             let candidates: Vec<LineColumn> = surfer
                 .iter()
                 .filter(|line_column| grid.cell(**line_column).is_unknown())
-                .filter(|line_column| !vec_region.contains(&grid.cell(**line_column).region))
+                .filter(|line_column| !vec_regions.contains(&grid.cell(**line_column).region))
                 .copied()
                 .collect();
 
@@ -118,7 +124,11 @@ fn rule_region_generic_combinations(
                     actions.push(GridAction::SetNoStar(line_column));
                 }
 
-                return Some(GoodRule::ZoneCombinations(vec_region, grid_surfer, actions));
+                return Some(GoodRule::ZoneCombinations(
+                    vec_regions,
+                    grid_surfer,
+                    actions,
+                ));
             }
         }
     }

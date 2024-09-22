@@ -19,6 +19,10 @@ use super::rule_region_combinations::{
     rule_region_1_combinations, rule_region_2_combinations, rule_region_3_combinations,
     rule_region_4_combinations,
 };
+use super::rule_region_exclusions::{
+    rule_region_1_exclusions, rule_region_2_exclusions, rule_region_3_exclusions,
+    rule_region_4_exclusions,
+};
 use super::rule_region_possible_stars::rule_region_possible_stars;
 use super::rule_value_completed::rule_value_completed;
 use super::rule_zone_possible_stars::{
@@ -36,6 +40,10 @@ pub enum GoodRule {
     /// Indique les cases restantes dans une zone ne peuvent pas être des étoiles
     ZoneNoStarCompleted(GridSurfer, Vec<GridAction>),
 
+    /// Indique que les cases restantes des régions en dehors d'une combinaison de lignes ou colonnes
+    /// ne peuvent pas contenir des étoiles
+    ZoneExclusions(Vec<Region>, GridSurfer, Vec<GridAction>),
+
     /// Indique que les cases restantes en dehors d'une combinaison de régions/lignes ou colonnes
     /// ne peuvent pas contenir des étoiles
     ZoneCombinations(Vec<Region>, GridSurfer, Vec<GridAction>),
@@ -50,6 +58,18 @@ pub enum GoodRule {
 
 impl Display for GoodRule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Texte pour une ligne de régions
+        fn display_vec_regions(regions: &[Region]) -> String {
+            let mut str_regions = String::new();
+            for region in regions {
+                if !str_regions.is_empty() {
+                    str_regions.push('+');
+                }
+                str_regions.push(*region);
+            }
+            str_regions
+        }
+
         match self {
             Self::NoStarAdjacentToStar(line_column, actions) => {
                 write!(f, "Les cases adjacentes à l'étoile en {line_column} ne peuvent pas contenir une étoile : {}", display_vec_actions(actions))
@@ -61,14 +81,16 @@ impl Display for GoodRule {
                     display_vec_actions(actions)
                 )
             }
+            Self::ZoneExclusions(regions, grid_surfer, actions) => {
+                let str_regions = display_vec_regions(regions);
+                write!(
+                    f,
+                    "Les cases restantes des regions {str_regions} qui ne sont pas dans {grid_surfer} ne peuvent être une étoile : {}",
+                    display_vec_actions(actions)
+                )
+            }
             Self::ZoneCombinations(regions, grid_surfer, actions) => {
-                let mut str_regions = String::new();
-                for region in regions {
-                    if !str_regions.is_empty() {
-                        str_regions.push_str(", ");
-                    }
-                    str_regions.push(*region);
-                }
+                let str_regions = display_vec_regions(regions);
                 write!(
                     f,
                     "Les cases restantes sur {grid_surfer} qui ne sont pas dans les régions {str_regions} ne peuvent être une étoile : {}",
@@ -99,6 +121,7 @@ impl Grid {
         match rule {
             GoodRule::NoStarAdjacentToStar(_, actions)
             | GoodRule::ZoneNoStarCompleted(_, actions)
+            | GoodRule::ZoneExclusions(_, _, actions)
             | GoodRule::ZoneCombinations(_, _, actions)
             | GoodRule::ZoneStarCompleted(_, actions)
             | GoodRule::InvariantWithZone(_, actions) => {
@@ -127,12 +150,16 @@ pub fn get_good_rule(handler: &GridHandler, grid: &Grid) -> Result<Option<GoodRu
     for f in [
         rule_no_star_adjacent_to_star,
         rule_value_completed,
+        rule_region_1_exclusions,
         rule_region_1_combinations,
         rule_region_possible_stars,
+        rule_region_2_exclusions,
         rule_region_2_combinations,
         rule_region_recursive_possible_stars,
+        rule_region_3_exclusions,
         rule_region_3_combinations,
         rule_line_column_recursive_possible_stars,
+        rule_region_4_exclusions,
         rule_region_4_combinations,
         rule_multi_2_lines_columns_recursive_possible_stars,
         rule_multi_3_lines_columns_recursive_possible_stars,
@@ -155,49 +182,78 @@ mod tests {
 
     use crate::GridParser;
 
-    #[test]
-    fn test_all_test_grids() {
-        // Liste des grilles d'exemple
-        let grid_filenames_and_nb_stars = vec![
-            ("./test_grids/test01.txt", 1),
-            ("./test_grids/facile01_2.txt", 2),
-            ("./test_grids/moyen01_2.txt", 2),
-            ("./test_grids/difficile01_2.txt", 2),
-            ("./test_grids/expert01_2.txt", 2),
-            ("./test_grids/facile02_2.txt", 2),
-            ("./test_grids/moyen02_2.txt", 2),
-            ("./test_grids/difficile02_2.txt", 2),
-            ("./test_grids/expert02_2.txt", 2),
-        ];
+    // Liste des grilles d'exemple
+    const TEST_GRIDS_FILENAME_AND_NB_STARS: &[(&str, usize)] = &[
+        ("./test_grids/test01.txt", 1),
+        ("./test_grids/facile01_2.txt", 2),
+        ("./test_grids/moyen01_2.txt", 2),
+        ("./test_grids/difficile01_2.txt", 2),
+        ("./test_grids/expert01_2.txt", 2),
+        ("./test_grids/facile02_2.txt", 2),
+        ("./test_grids/moyen02_2.txt", 2),
+        ("./test_grids/difficile02_2.txt", 2),
+        ("./test_grids/expert02_2.txt", 2),
+    ];
 
-        for (grid_file_name, nb_stars) in grid_filenames_and_nb_stars {
-            // Ouverture du fichier
-            println!("Fichier : {grid_file_name}");
-            let mut file = File::open(grid_file_name).unwrap();
-            // Lecture du fichier
-            let mut file_contents = String::new();
-            file.read_to_string(&mut file_contents).unwrap();
-            // Conversion en Grid
-            let grid_parser = GridParser::try_from(file_contents.as_str()).unwrap();
-            let grid_handler = GridHandler::new(&grid_parser, nb_stars);
-            let mut grid = Grid::from(&grid_handler);
-            // Boucle de résolution
-            loop {
-                match get_good_rule(&grid_handler, &grid) {
-                    Ok(option_good_rule) => {
-                        if option_good_rule.is_some() {
-                            let good_rule = option_good_rule.unwrap();
-                            grid.apply_good_rule(&good_rule);
-                        } else {
-                            break;
+    #[test]
+    fn test_grid_test() {
+        test_all_test_grids("test");
+    }
+
+    #[test]
+    fn test_grid_facile() {
+        test_all_test_grids("facile");
+    }
+
+    #[test]
+    fn test_grid_moyen() {
+        test_all_test_grids("moyen");
+    }
+
+    #[test]
+    fn test_grid_difficile() {
+        test_all_test_grids("difficile");
+    }
+
+    #[test]
+    fn test_grid_expert() {
+        test_all_test_grids("expert");
+    }
+
+    /// Primitive générique qui teste les grilles de tests dont le nom de leur fichier contient
+    /// la chaîne `filename_part`
+    /// (Evite de tout tester silencieusement car c'est un peu long...)
+    fn test_all_test_grids(filename_part: &str) {
+        for (grid_file_name, nb_stars) in TEST_GRIDS_FILENAME_AND_NB_STARS {
+            if grid_file_name.contains(filename_part) {
+                // Ouverture du fichier
+                println!("Fichier : {grid_file_name}");
+                let mut file = File::open(grid_file_name).unwrap();
+                // Lecture du fichier
+                let mut file_contents = String::new();
+                file.read_to_string(&mut file_contents).unwrap();
+                // Conversion en Grid
+                let grid_parser = GridParser::try_from(file_contents.as_str()).unwrap();
+                let grid_handler = GridHandler::new(&grid_parser, *nb_stars);
+                let mut grid = Grid::from(&grid_handler);
+                // Boucle de résolution
+                loop {
+                    match get_good_rule(&grid_handler, &grid) {
+                        Ok(option_good_rule) => {
+                            if option_good_rule.is_some() {
+                                let good_rule = option_good_rule.unwrap();
+                                grid.apply_good_rule(&good_rule);
+                            } else {
+                                break;
+                            }
+                        }
+                        Err(bad_rule) => {
+                            panic!("{bad_rule} !!!");
                         }
                     }
-                    Err(bad_rule) => {
-                        panic!("{bad_rule} !!!");
-                    }
                 }
+                assert!(grid_handler.is_done(&grid));
             }
-            assert!(grid_handler.is_done(&grid));
         }
     }
 }

@@ -19,8 +19,8 @@ Vous devez placer des étoiles sur la grille selon ces règles :
 
 ## [`Region`]
 
-[`Region`] est une zone de cases dans laquelle il faut également placer une étoile (ou le nombre d'étoiles à placer).
-Pour ce crate, c'est identifié par un [`char`] issu de la formalisation textuelle reconnue par le [`GridParser`].
+[`Region`] est une zone de cases dans laquelle il faut également placer le nombre d'étoiles attendus.<br>
+Pour ce crate, une région est identifiée par un [`char`] issu de la formalisation textuelle reconnue par le [`GridParser`].
 
 ## [`GridParser`]
 
@@ -34,7 +34,7 @@ Le constructeur est une forme de [`TryFrom`] pour l'un des types suivants :
 * `TryFrom<Vec<&str>> for `
 * `TryFrom<&str> for Parser`
 
-Chaque ligne du texte (ou chaque élément du vecteur) correspond à une ligne de la grille.<br>
+Chaque ligne du texte (ou chaque élément du vecteur) correspond à une ligne de la grille à résoudre.<br>
 Les différentes régions de la grille sont identifiées par des caractères distincts dans les cases correspondantes.<br>
 Les espaces ou séparateurs équivalents (e.g. TAB) sont ignorés.<br>
 Les lignes 'vides' ou qui débutent par l'un des caractères suivants sont ignorées : '*', '#' ou '/'
@@ -75,6 +75,7 @@ let line_column = LineColumn::new(0, 1);
 
 assert_eq!(line_column.line(), 0);
 assert_eq!(line_column.column(), 1);
+assert_eq!(format!("{}", line_column), "B1");
 ```
 
 ## [`CellValue`]
@@ -83,7 +84,7 @@ assert_eq!(line_column.column(), 1);
 
 * `Unknown` : Contenu inconnu de la case (valeur par défaut)
 * `Star` : La case contient une étoile
-* `NoStar` : La case ne contient pas d'étoile
+* `NoStar` : La case ne peut pas contenir une étoile
 
 ```rust
 use star_battle::CellValue;
@@ -120,7 +121,8 @@ assert_eq!(grid_parser.cell(LineColumn::new(0, 0)).unwrap().value, CellValue::Un
 Les contenus des cases de la grille ne sont pas définis dans la structure [`GridHandler`].<br>
 C'est la structure [`Grid`] qui représente le contenu des cases de la grille.
 
-Initialement, le [`GridHandler`] est construite à partir d'un [`GridParser`].
+Initialement, le [`GridHandler`] est construite à partir d'un [`GridParser`] en indiquant le nombre d'étoiles à
+placer sur chaque ligne, colonne et région.
 
 ```rust
 use star_battle::{GridParser, GridHandler, LineColumn};
@@ -135,13 +137,15 @@ assert_eq!(grid.regions().len(), 5);
 assert_eq!(grid.cell_region(LineColumn::new(0, 0)), 'A');
 ```
 
+La fonction [`GridHandler::is_done`] retourne `true` si toutes les cases de la grille ont une valeur définie.
+
 ## [`Grid`]
 
 [`Grid`] est la structure avec le contenu des cases de la grille.
 
 Cette structure est utilisée pour la resolution du jeu. Elle est allégée des informations détenues par la
-structure associée [`GridHandler`]; Ce qui permet d'examiner des évolutions de la grille avec un minimum
-d'occupation de mémoire.
+structure associée [`GridHandler`]; Ce qui permet d'examiner des évolutions de la grille en optimisant
+l'occupation de mémoire.
 
 Initialement, la [`Grid`] est construite à partir d'un [`GridHandler`].
 
@@ -158,8 +162,6 @@ assert_eq!(grid.nb_columns(), 5);
 
 On peut ainsi utiliser la structure [`Grid`] pour résoudre le jeu en clonant cette structure et en
 postulant sur la valeur des cases de la grille pour évaluer les possibilités.
-
-La fonction [`GridHandler::is_done`] retourne `true` si toutes les cases de la grille ont une valeur définie.
 
 ```rust
 use star_battle::{GridParser, GridHandler, Grid, LineColumn, CellValue};
@@ -178,7 +180,7 @@ assert_eq!(grid_cloned.cell(line_column).value, CellValue::Star);
 ## [`GridSurfer`]
 
 [`GridSurfer`] est une  énumération qui permet de naviguer sur les case de la grille qui répondre à certains
-critères à travers la grille.
+critères pour parcourir les cases d'une grille.
 
  Cette énumération est applicable sur un objet [`GridHandler`] associé à une grille définie par un [`Grid`].
 
@@ -209,8 +211,9 @@ assert_eq!(grid_surfer, vec![LineColumn::new(0, 0), LineColumn::new(1, 0)]);
 [`BadRuleError`] identifie une situation qui invalide le contenu d'une grille.
 
 La fonction [`check_bad_rules`] permet de vérifier qu'une une grille est valide ou non.
+Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valide et `Ok(())` si la grille est valide.
 
-Les situations invalidant étant :
+Les situations invalides étant :
 
 * 2 cases adjacentes contenant chacune une étoile
 * Une 'zone' qui contient trop d'étoiles
@@ -274,8 +277,8 @@ assert_eq!(grid.cell(LineColumn::new(1, 1)).value, CellValue::NoStar);
 
 La fonction [`get_good_rule`] recherche une règle [`GoodRule`] applicable à une grille.<br>
 Cette fonction retourne une erreur [`BadRuleError`] si la grille n'est pas valide.<br>
-Sinon un `Option<GoodRule>` est retourné. None signifie alors qu'aucune règle permettant d'avancer dans la
-construction de la grille n'a été trouvée.
+Sinon un `Option<GoodRule>` est retourné.<br>
+None signifie alors qu'aucune règle permettant d'avancer dans la construction de la grille n'a été trouvée.
 
 Les règles examinées sont :
 
@@ -287,15 +290,22 @@ Les règles examinées sont :
 * S'il reste autant de cases non définies dans une 'zone' (région, ligne ou colonne) que d'étoiles manquantes
   dans cette 'zone' alors ce sont forcément des étoiles
 
-* Toutes les combinaisons possibles pour positioner une étoile dans une région ont des cases toujours avec une
-  étoile ou jamais une étoile
+* Si toutes les combinaisons possibles pour positioner les étoiles dans une région ont des cases toujours avec une
+  étoile (ou jamais une étoile) alors ces cases contiennent une étoile (ou ne peuvent pas contenir une étoile)
 
-* Des case autour d'une région sont toujours adjacente à une étoile pour toutes les combinaisons possibles d'étoiles
-  dans cette région. Ces cases ne peuvent donc pas être des étoiles
+* Si une case autour d'une région est toujours adjacente à une étoile pour toutes les combinaisons possibles d'étoiles
+  dans cette région alors cette case ne peut pas être des étoiles
 
-* Toutes les combinaisons de 1, 2, 3 ou 4 régions qui occupent respectivement uniquement 1, 2, 3 ou 4 lignes ou
-  colonnes sont examinées. S'il restent des cases n'appartenant pas à ces combinaisons dans ces lignes ou colonnes,
-  elles ne peuvent pas contenir une étoile
+* On examine toutes les combinaisons de 1, 2, 3 ou 4 lignes ou colonnes qui sont occupées par max. 'n' régions :
+  S'il existe des cases de ces régions en dehors de ces 1, 2, 3 ou 4 lignes ou colonnes, elles ne peuvent pas
+  contenir une étoile puisque toutes les étoiles de ces régions sont forcement dans les 1, 2, 3 ou 4 lignes
+  ou colonnes examinés.<br>
+  (cette règle est l'inverse de la suivante)
+
+* On examine toutes les combinaisons de 1, 2, 3 ou 4 régions qui occupent respectivement uniquement 1, 2, 3 ou 4 lignes
+  ou colonnes : S'il restent des cases n'appartenant pas à ces combinaisons dans ces lignes ou colonnes, elles ne
+  peuvent pas contenir une étoile.<br>
+  (cette règle est l'inverse de la précédente)
 
 * Toutes les combinaisons possibles pour positionner une étoile dans une ligne ou colonne ont des
   cases toujours avec une étoile ou jamais une étoile dans toutes les grilles possibles pour ces combinaisons
