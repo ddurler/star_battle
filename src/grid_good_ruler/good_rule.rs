@@ -193,7 +193,16 @@ mod tests {
         ("./test_grids/moyen02_2.txt", 2),
         ("./test_grids/difficile02_2.txt", 2),
         ("./test_grids/expert02_2.txt", 2),
+        ("./test_grids/facile03_2.txt", 2),
+        ("./test_grids/moyen03_2.txt", 2),
+        ("./test_grids/difficile03_2.txt", 2),
+        ("./test_grids/expert03_2.txt", 2),
     ];
+
+    // #[test]
+    // fn test_grid_dd_debug() {
+    //     test_all_test_grids("facile03");
+    // }
 
     #[test]
     fn test_grid_test() {
@@ -252,6 +261,11 @@ mod tests {
                         }
                     }
                 }
+
+                println!(
+                    "\nFILE {grid_file_name}\n{}",
+                    grid_handler.display(&grid, true)
+                );
                 assert!(grid_handler.is_done(&grid));
             }
         }
