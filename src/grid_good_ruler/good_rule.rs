@@ -197,6 +197,10 @@ mod tests {
         ("./test_grids/moyen03_2.txt", 2),
         ("./test_grids/difficile03_2.txt", 2),
         ("./test_grids/expert03_2.txt", 2),
+        ("./test_grids/facile04_2.txt", 2),
+        ("./test_grids/moyen04_2.txt", 2),
+        ("./test_grids/difficile04_2.txt", 2),
+        ("./test_grids/expert04_2.txt", 2),
     ];
 
     // #[test]

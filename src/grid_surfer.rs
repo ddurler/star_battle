@@ -46,18 +46,30 @@ impl Display for GridSurfer {
             Self::Adjacent(line_column) => write!(f, "Cases adjacentes à '{line_column}'"),
             Self::Line(line) => write!(f, "Ligne {}", display_line(*line)),
             Self::Column(column) => write!(f, "Colonne {}", display_column(*column)),
-            Self::Lines(range) => write!(
-                f,
-                "Lignes {}-{}",
-                display_line(*range.start()),
-                display_line(*range.end())
-            ),
-            Self::Columns(range) => write!(
-                f,
-                "Colonnes {}-{}",
-                display_column(*range.start()),
-                display_column(*range.end())
-            ),
+            Self::Lines(range) => {
+                if *range.start() == *range.end() {
+                    write!(f, "Ligne {}", display_line(*range.start()))
+                } else {
+                    write!(
+                        f,
+                        "Lignes {}-{}",
+                        display_line(*range.start()),
+                        display_line(*range.end())
+                    )
+                }
+            }
+            Self::Columns(range) => {
+                if *range.start() == *range.end() {
+                    write!(f, "Colonne {}", display_column(*range.start()))
+                } else {
+                    write!(
+                        f,
+                        "Colonnes {}-{}",
+                        display_column(*range.start()),
+                        display_column(*range.end())
+                    )
+                }
+            }
         }
     }
 }
