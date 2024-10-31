@@ -184,7 +184,8 @@ mod tests {
 
     // Liste des grilles d'exemple
     const TEST_GRIDS_FILENAME_AND_NB_STARS: &[(&str, usize)] = &[
-        ("./test_grids/test01.txt", 1),
+        ("./test_grids/test01_1.txt", 1),
+        ("./test_grids/test02_1.txt", 1),
         ("./test_grids/facile01_2.txt", 2),
         ("./test_grids/moyen01_2.txt", 2),
         ("./test_grids/difficile01_2.txt", 2),

@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn test_main() {
         // Liste de fichiers de tests avec des grilles à résoudre
-        let test_files = vec!["./test_grids/test01.txt"];
+        let test_files = vec!["./test_grids/test01_1.txt"];
 
         for test_file in test_files {
             let lines = read_lines(test_file).unwrap();
